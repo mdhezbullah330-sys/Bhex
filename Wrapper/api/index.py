@@ -29,35 +29,43 @@ def dashboard():
     msg_type = "success"
 
     if request.method == 'POST':
-        new_key = request.form.get('key_name')
-        days = request.form.get('expiry_days', type=int)
-        
-        ip_locked = True if request.form.get('ip_locked') == 'on' else False
-        manual_ip = request.form.get('manual_ip', '').strip()
+        try:
+            new_key = request.form.get('key_name')
+            days = request.form.get('expiry_days', type=int)
+            
+            ip_locked = True if request.form.get('ip_locked') == 'on' else False
+            manual_ip = request.form.get('manual_ip', '').strip()
 
-        if new_key and days:
-            expiry_date = datetime.utcnow() + timedelta(days=days)
-            
-            key_data = {
-                "key": new_key, 
-                "expires_at": expiry_date,
-                "ip_locked": ip_locked,
-                "locked_ip": manual_ip if manual_ip else None,
-                "last_used": None
-            }
-            
-            keys_collection.update_one(
-                {"key": new_key},
-                {"$set": key_data},
-                upsert=True
-            )
-            msg = f"Key '{new_key}' successfully deployed!"
-        else:
-            msg = "Please fill all fields properly."
+            if new_key and days:
+                expiry_date = datetime.utcnow() + timedelta(days=days)
+                expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
+                
+                key_data = {
+                    "key": new_key, 
+                    "expires_at": expiry_str, # String format for maximum template safety
+                    "ip_locked": ip_locked,
+                    "locked_ip": manual_ip if manual_ip else None,
+                    "last_used": None
+                }
+                
+                keys_collection.update_one(
+                    {"key": new_key},
+                    {"$set": key_data},
+                    upsert=True
+                )
+                msg = f"Key '{new_key}' successfully deployed!"
+            else:
+                msg = "Please fill all fields properly."
+                msg_type = "danger"
+        except Exception as e:
+            msg = f"Backend Error: {str(e)}"
             msg_type = "danger"
 
-    all_keys = list(keys_collection.find({}, {"_id": 0}))
-    return render_template('dashboard.html', msg=msg, msg_type=msg_type, keys=all_keys)
+    try:
+        all_keys = list(keys_collection.find({}, {"_id": 0}))
+        return render_template('dashboard.html', msg=msg, msg_type=msg_type, keys=all_keys)
+    except Exception as e:
+        return f"Template Rendering Error: {str(e)}. Please check your dashboard HTML fields."
 
 @app.route('/delete_key/<string:key_name>', methods=['POST'])
 def delete_key(key_name):
@@ -107,9 +115,14 @@ def check_uid():
     if not key_data:
         return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
 
-    expiry_time = key_data.get("expires_at")
-    if expiry_time and datetime.utcnow() > expiry_time:
-        return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
+    expiry_time_str = key_data.get("expires_at")
+    if expiry_time_str:
+        try:
+            expiry_time = datetime.strptime(expiry_time_str, '%Y-%m-%d %H:%M:%S')
+            if datetime.utcnow() > expiry_time:
+                return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
+        except Exception:
+            pass # fallback if some old format persists
 
     if key_data.get("ip_locked"):
         current_locked_ip = key_data.get("locked_ip")
