@@ -89,10 +89,22 @@ def check_uid():
         response = requests.get(f"{TARGET_URL}?uid={uid}&key=great", timeout=60)
         api_res = response.json()
     except Exception:
-        return jsonify({"error": True, "message": "API took too long to respond or is down"}), 500
+        return jsonify({"error": True, "message": "Main API took too long to respond or is down"}), 500
 
+    # এখানে মেইন এপিআই-এর রেসপন্স মডিফাই করা হচ্ছে
     if isinstance(api_res, dict):
+        # পুরানো ক্রেডিট থাকলে তা মুছে ফেলা হচ্ছে
         api_res.pop("credit", None)
+        
+        # তোমার নিজের কাস্টম ক্রেডিট ডাটার একদম শুরুতে (Top Level) ইনজেক্ট করা হচ্ছে
+        custom_credit = {
+            "developer": "TEAM BENJA HEX",
+            "discord": "https://discord.gg/TKdd5GNhxq",
+            "youtube": "https://youtube.com/@benjahexofficial?si=DVyAs57DGUBe7jw7"
+        }
+        
+        # নতুন ডিকশনারি তৈরি করে ক্রেডিট প্রথমে রাখা হচ্ছে
+        api_res = {**{"credit": custom_credit}, **api_res}
 
     return jsonify(api_res), response.status_code
 
