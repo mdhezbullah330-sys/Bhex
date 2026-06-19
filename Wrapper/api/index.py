@@ -16,7 +16,6 @@ TARGET_URL = "http://raw.thug4ff.xyz/check"
 ADMIN_PASSWORD = "1nonly_talha"
 
 def get_client_ip():
-    # Vercel ba proxy-r moddhome ashle real IP ber korar jonne
     if request.headers.get('X-Forwarded-For'):
         return request.headers.get('X-Forwarded-For').split(',')[0].strip()
     return request.remote_addr
@@ -33,19 +32,17 @@ def dashboard():
         new_key = request.form.get('key_name')
         days = request.form.get('expiry_days', type=int)
         
-        # IP Lock configuration
         ip_locked = True if request.form.get('ip_locked') == 'on' else False
         manual_ip = request.form.get('manual_ip', '').strip()
 
         if new_key and days:
             expiry_date = datetime.utcnow() + timedelta(days=days)
             
-            # Key entry structure
             key_data = {
                 "key": new_key, 
                 "expires_at": expiry_date,
                 "ip_locked": ip_locked,
-                "locked_ip": manual_ip if manual_ip else None, # Manual thakle save hobe, na thakle None (auto-lock hobe)
+                "locked_ip": manual_ip if manual_ip else None,
                 "last_used": None
             }
             
@@ -75,7 +72,6 @@ def reset_ip(key_name):
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     
-    # IP reset kore abar auto-lock state-e niye jaoa (locked_ip = None)
     keys_collection.update_one({"key": key_name}, {"$set": {"locked_ip": None}})
     return redirect(url_for('dashboard'))
 
@@ -115,19 +111,16 @@ def check_uid():
     if expiry_time and datetime.utcnow() > expiry_time:
         return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
 
-    # 🛡️ IP Lock Logic
     if key_data.get("ip_locked"):
         current_locked_ip = key_data.get("locked_ip")
         
         if not current_locked_ip:
-            # 1st try: Auto IP lock fixing
             keys_collection.update_one({"key": user_key}, {"$set": {"locked_ip": user_ip}})
             current_locked_ip = user_ip
             
         if user_ip != current_locked_ip:
             return jsonify({"error": True, "message": "You are not whitelisted! IP mismatch."}), 403
 
-    # Last used time o IP update kora database-e
     keys_collection.update_one(
         {"key": user_key}, 
         {"$set": {"last_used": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + " UTC"}}
