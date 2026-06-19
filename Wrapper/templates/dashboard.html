@@ -103,7 +103,7 @@
                                 <tr class="hover:bg-slate-900/20 transition-all">
                                     <td class="p-3 font-bold text-slate-300">{{ k.get('key', 'UNKNOWN') }}</td>
                                     <td class="p-3 text-slate-400 text-[11px]">
-                                        {{ k.expires_at.strftime('%Y-%m-%d %H:%M') if k.expires_at else 'PERMANENT' }}
+                                        {{ k.get('expires_at', 'PERMANENT') }}
                                     </td>
                                     <td class="p-3">
                                         {% if k.get('ip_locked') %}
@@ -116,18 +116,18 @@
                                             <span class="text-slate-600 italic">No Lock</span>
                                         {% endif %}
                                     </td>
-                                    <td class="p-3 text-slate-400 text-[11px]">{{ k.get('last_used') if k.get('last_used') else 'Never Used' }}</td>
+                                    <td class="p-3 text-slate-400 text-[11px]">{{ k.get('last_used', 'Never Used') }}</td>
                                     <td class="p-3">
                                         <div class="flex items-center justify-center gap-3">
                                             {% if k.get('ip_locked') %}
-                                            <form action="/reset_ip/{{ k.key }}" method="POST" onsubmit="return confirm('Reset locked IP address?');">
+                                            <form action="/reset_ip/{{ k.get('key') }}" method="POST" onsubmit="return confirm('Reset locked IP address?');">
                                                 <button type="submit" title="Reset Locked IP" class="text-yellow-500 hover:text-yellow-400 transition-colors">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
                                                 </button>
                                             </form>
                                             {% endif %}
                                             
-                                            <form action="/delete_key/{{ k.key }}" method="POST" onsubmit="return confirm('Delete this token?');">
+                                            <form action="/delete_key/{{ k.get('key') }}" method="POST" onsubmit="return confirm('Delete this token?');">
                                                 <button type="submit" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 </button>
