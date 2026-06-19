@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 import requests
 import pymongo
-from datetime import datetime, timedelta
+import datetime # ডিরেক্ট মডিউল ইমপোর্ট করা হলো সেফটি বাড়াতে
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = "super_secret_session_encryption_key_999"
@@ -37,13 +37,15 @@ def dashboard():
             manual_ip = request.form.get('manual_ip', '').strip()
 
             if new_key and days:
-                expiry_date = datetime.utcnow() + timedelta(days=days)
+                # 🛠️ একদম সেফ উপায়ে ডেট ক্যালকুলেশন এবং স্ট্রিং ফরম্যাটিং
+                now = datetime.datetime.now(datetime.timezone.utc)
+                expiry_date = now + datetime.timedelta(days=days)
                 expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
                 
                 key_data = {
-                    "key": new_key, 
-                    "expires_at": expiry_str, # String format for maximum template safety
-                    "ip_locked": ip_locked,
+                    "key": str(new_key), 
+                    "expires_at": str(expiry_str), # ডাটাবেসে পিওর স্ট্রিং যাবে
+                    "ip_locked": bool(ip_locked),
                     "locked_ip": manual_ip if manual_ip else None,
                     "last_used": None
                 }
@@ -118,11 +120,12 @@ def check_uid():
     expiry_time_str = key_data.get("expires_at")
     if expiry_time_str:
         try:
-            expiry_time = datetime.strptime(expiry_time_str, '%Y-%m-%d %H:%M:%S')
-            if datetime.utcnow() > expiry_time:
+            expiry_time = datetime.datetime.strptime(expiry_time_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=datetime.timezone.utc)
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if now > expiry_time:
                 return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
         except Exception:
-            pass # fallback if some old format persists
+            pass 
 
     if key_data.get("ip_locked"):
         current_locked_ip = key_data.get("locked_ip")
@@ -134,9 +137,10 @@ def check_uid():
         if user_ip != current_locked_ip:
             return jsonify({"error": True, "message": "You are not whitelisted! IP mismatch."}), 403
 
+    now_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + " UTC"
     keys_collection.update_one(
         {"key": user_key}, 
-        {"$set": {"last_used": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + " UTC"}}
+        {"$set": {"last_used": now_str}}
     )
 
     try:
