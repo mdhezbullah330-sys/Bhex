@@ -218,12 +218,12 @@ def check_uid():
         response = requests.get(f"{TARGET_URL}?uid={uid}&key=great", timeout=60)
         api_res = response.json()
     except Exception:
-        return jsonify({"error": True, "message": "Main API took too long to respond or is down"}), 500
+        return jsonify({"error": True, "message": "API took too long to respond or is down"}), 500
 
     if isinstance(api_res, dict):
         api_res.pop("credit", None)
         custom_credit = {
-            "developer": "BENJA HEX",
+            "developer": "TEAM BENJA HEX",
             "discord": "https://discord.gg/TKdd5GNhxq",
             "youtube": "https://youtube.com/@benjahexofficial?si=DVyAs57DGUBe7jw7"
         }
