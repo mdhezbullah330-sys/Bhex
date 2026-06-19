@@ -13,7 +13,9 @@ db = client["my_api_db"]
 keys_collection = db["api_keys"]
 
 TARGET_URL = "http://raw.thug4ff.xyz/check"
-ADMIN_PASSWORD = "1nonly_talha"
+
+# Multi-Admin Authorization Array
+ADMIN_PASSWORDS = ["1nonly_talha", "hyceanx", "benjahexofficialx", "duryabx", "deeshanx"]
 
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'):
@@ -37,7 +39,6 @@ def dashboard():
             manual_ip = request.form.get('manual_ip', '').strip()
 
             if new_key and days:
-                # 🛑 চেক করা হচ্ছে কী-টি অলরেডি ডাটাবেসে আছে কিনা
                 existing_key = keys_collection.find_one({"key": new_key})
                 if existing_key:
                     msg = f"Error: The key '{new_key}' already exists in the database!"
@@ -51,7 +52,8 @@ def dashboard():
                         "expires_at": str(expiry_str),
                         "ip_locked": bool(ip_locked),
                         "locked_ip": manual_ip if manual_ip else None,
-                        "last_used": None
+                        "last_used": None,
+                        "is_active": True # Default active state token topology
                     }
                     
                     keys_collection.insert_one(key_data)
@@ -69,19 +71,35 @@ def dashboard():
     except Exception as e:
         return f"Template Error: {str(e)}"
 
+@app.route('/api/live_keys', methods=['GET'])
+def live_keys():
+    if not session.get('logged_in'):
+        return jsonify({"error": "Unauthorized"}), 401
+    all_keys = list(keys_collection.find({}, {"_id": 0}))
+    return jsonify(all_keys)
+
 @app.route('/delete_key/<string:key_name>', methods=['POST'])
 def delete_key(key_name):
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    
     keys_collection.delete_one({"key": key_name})
+    return redirect(url_for('dashboard'))
+
+@app.route('/toggle_pause/<string:key_name>', methods=['POST'])
+def toggle_pause(key_name):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    key_data = keys_collection.find_one({"key": key_name})
+    if key_data:
+        current_state = key_data.get("is_active", True)
+        keys_collection.update_one({"key": key_name}, {"$set": {"is_active": not current_state}})
     return redirect(url_for('dashboard'))
 
 @app.route('/reset_ip/<string:key_name>', methods=['POST'])
 def reset_ip(key_name):
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    
     keys_collection.update_one({"key": key_name}, {"$set": {"locked_ip": None}})
     return redirect(url_for('dashboard'))
 
@@ -90,12 +108,12 @@ def login():
     error = None
     if request.method == 'POST':
         password = request.form.get('password')
-        if password == ADMIN_PASSWORD:
+        if password in ADMIN_PASSWORDS:
             session['logged_in'] = True
             session.permanent = True
             return redirect(url_for('dashboard'))
         else:
-            error = "Invalid Password! Try again."
+            error = "Invalid Administrative Token Matrix! Try again."
             
     return render_template('login.html', error=error)
 
@@ -110,7 +128,6 @@ def check_uid():
     user_key = request.args.get('key')
     user_ip = get_client_ip()
 
-    # ⏱️ ডাইনামিক ইউজ ট্র্যাকিং (রিকোয়েস্ট আসা মাত্রই টাইম সবসময় আপডেট হবে)
     if user_key:
         now_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + " UTC"
         keys_collection.update_one({"key": user_key}, {"$set": {"last_used": now_str}})
@@ -122,6 +139,10 @@ def check_uid():
     if not key_data:
         return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
 
+    # 🛑 Pause Enforcement Filter Layer
+    if not key_data.get("is_active", True):
+        return jsonify({"error": True, "message": f"Your access key '{user_key}' has been paused or temporarily suspended by admin"}), 403
+
     expiry_time_str = key_data.get("expires_at")
     if expiry_time_str:
         try:
@@ -131,7 +152,6 @@ def check_uid():
         except Exception:
             pass 
 
-    # 🛡️ IP লক চেকিং
     if key_data.get("ip_locked"):
         current_locked_ip = key_data.get("locked_ip")
         
