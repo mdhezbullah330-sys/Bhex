@@ -15,6 +15,12 @@ keys_collection = db["api_keys"]
 TARGET_URL = "http://raw.thug4ff.xyz/check"
 ADMIN_PASSWORD = "1nonly_talha"
 
+def get_client_ip():
+    # Vercel ba proxy-r moddhome ashle real IP ber korar jonne
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if not session.get('logged_in'):
@@ -26,15 +32,29 @@ def dashboard():
     if request.method == 'POST':
         new_key = request.form.get('key_name')
         days = request.form.get('expiry_days', type=int)
+        
+        # IP Lock configuration
+        ip_locked = True if request.form.get('ip_locked') == 'on' else False
+        manual_ip = request.form.get('manual_ip', '').strip()
 
         if new_key and days:
             expiry_date = datetime.utcnow() + timedelta(days=days)
+            
+            # Key entry structure
+            key_data = {
+                "key": new_key, 
+                "expires_at": expiry_date,
+                "ip_locked": ip_locked,
+                "locked_ip": manual_ip if manual_ip else None, # Manual thakle save hobe, na thakle None (auto-lock hobe)
+                "last_used": None
+            }
+            
             keys_collection.update_one(
                 {"key": new_key},
-                {"$set": {"key": new_key, "expires_at": expiry_date}},
+                {"$set": key_data},
                 upsert=True
             )
-            msg = f"Key '{new_key}' successfully deployed for {days} days!"
+            msg = f"Key '{new_key}' successfully deployed!"
         else:
             msg = "Please fill all fields properly."
             msg_type = "danger"
@@ -48,6 +68,15 @@ def delete_key(key_name):
         return redirect(url_for('login'))
     
     keys_collection.delete_one({"key": key_name})
+    return redirect(url_for('dashboard'))
+
+@app.route('/reset_ip/<string:key_name>', methods=['POST'])
+def reset_ip(key_name):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    # IP reset kore abar auto-lock state-e niye jaoa (locked_ip = None)
+    keys_collection.update_one({"key": key_name}, {"$set": {"locked_ip": None}})
     return redirect(url_for('dashboard'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -73,6 +102,7 @@ def logout():
 def check_uid():
     uid = request.args.get('uid')
     user_key = request.args.get('key')
+    user_ip = get_client_ip()
 
     if not uid or not user_key:
         return jsonify({"error": True, "message": "Missing uid or key parameter"}), 400
@@ -85,25 +115,37 @@ def check_uid():
     if expiry_time and datetime.utcnow() > expiry_time:
         return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
 
+    # 🛡️ IP Lock Logic
+    if key_data.get("ip_locked"):
+        current_locked_ip = key_data.get("locked_ip")
+        
+        if not current_locked_ip:
+            # 1st try: Auto IP lock fixing
+            keys_collection.update_one({"key": user_key}, {"$set": {"locked_ip": user_ip}})
+            current_locked_ip = user_ip
+            
+        if user_ip != current_locked_ip:
+            return jsonify({"error": True, "message": "You are not whitelisted! IP mismatch."}), 403
+
+    # Last used time o IP update kora database-e
+    keys_collection.update_one(
+        {"key": user_key}, 
+        {"$set": {"last_used": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + " UTC"}}
+    )
+
     try:
         response = requests.get(f"{TARGET_URL}?uid={uid}&key=great", timeout=60)
         api_res = response.json()
     except Exception:
         return jsonify({"error": True, "message": "Main API took too long to respond or is down"}), 500
 
-    # এখানে মেইন এপিআই-এর রেসপন্স মডিফাই করা হচ্ছে
     if isinstance(api_res, dict):
-        # পুরানো ক্রেডিট থাকলে তা মুছে ফেলা হচ্ছে
         api_res.pop("credit", None)
-        
-        # তোমার নিজের কাস্টম ক্রেডিট ডাটার একদম শুরুতে (Top Level) ইনজেক্ট করা হচ্ছে
         custom_credit = {
-            "developer": "TEAM BENJA HEX",
+            "developer": "BENJA HEX",
             "discord": "https://discord.gg/TKdd5GNhxq",
             "youtube": "https://youtube.com/@benjahexofficial?si=DVyAs57DGUBe7jw7"
         }
-        
-        # নতুন ডিকশনারি তৈরি করে ক্রেডিট প্রথমে রাখা হচ্ছে
         api_res = {**{"credit": custom_credit}, **api_res}
 
     return jsonify(api_res), response.status_code
