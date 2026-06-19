@@ -14,7 +14,6 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-        /* Custom SweetAlert Dark Theme styling */
         .swal2-popup { background: #090514 !important; border: 1px solid #1e1b4b !important; color: #f1f5f9 !important; border-radius: 1rem !important; }
     </style>
 </head>
@@ -122,16 +121,16 @@
                                     <td class="p-3">
                                         <div class="flex items-center justify-center gap-3">
                                             {% if k.get('ip_locked') %}
-                                            <button type="button" onclick="confirmResetIP('{{ k.get(\'key\') }}')" title="Reset Locked IP" class="text-yellow-500 hover:text-yellow-400 transition-colors">
+                                            <button type="button" onclick="confirmResetIP('{{ k.get('key') }}')" title="Reset Locked IP" class="text-yellow-500 hover:text-yellow-400 transition-colors">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
                                             </button>
-                                            <form id="form-reset-{{ k.get(\'key\') }}" action="/reset_ip/{{ k.get(\'key\') }}" method="POST" class="hidden"></form>
+                                            <form id="form-reset-{{ k.get('key') }}" action="/reset_ip/{{ k.get('key') }}" method="POST" class="hidden"></form>
                                             {% endif %}
                                             
-                                            <button type="button" onclick="confirmDeleteKey('{{ k.get(\'key\') }}')" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
+                                            <button type="button" onclick="confirmDeleteKey('{{ k.get('key') }}')" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             </button>
-                                            <form id="form-delete-{{ k.get(\'key\') }}" action="/delete_key/{{ k.get(\'key\') }}" method="POST" class="hidden"></form>
+                                            <form id="form-delete-{{ k.get('key') }}" action="/delete_key/{{ k.get('key') }}" method="POST" class="hidden"></form>
                                         </div>
                                     </td>
                                 </tr>
@@ -162,11 +161,11 @@
             }
         }
 
-        // Beautiful SweetAlert2 Confirmation Popups
+        // Clean SweetAlert2 Integration without invalid backslashes
         function confirmDeleteKey(keyName) {
             Swal.fire({
                 title: 'Are you sure?',
-                text: `You want to delete token: ${keyName}`,
+                text: 'You want to delete token: ' + keyName,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
@@ -174,7 +173,7 @@
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    document.getElementById(`form-delete-${keyName}`).submit();
+                    document.getElementById('form-delete-' + keyName).submit();
                 }
             })
         }
@@ -190,7 +189,7 @@
                 confirmButtonText: 'Yes, reset!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    document.getElementById(`form-reset-${keyName}`).submit();
+                    document.getElementById('form-reset-' + keyName).submit();
                 }
             })
         }
