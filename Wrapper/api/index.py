@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 import requests
 import pymongo
 import datetime
-import pytz  # BD Timezone এর জন্য
+import pytz  # BD Timezone এর জন্য (pip install pytz)
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = "super_secret_session_encryption_key_999"
@@ -15,6 +15,7 @@ keys_collection = db["api_keys"]
 
 TARGET_URL = "http://raw.thug4ff.xyz/check"
 
+# Multi-Admin Authorization Array
 ADMIN_PASSWORDS = ["1nonly_talha", "hyceanx", "benjahexofficialx", "duryabx", "deeshanx"]
 
 # BD Timezone helper function
@@ -27,25 +28,38 @@ def get_client_ip():
         return request.headers.get('X-Forwarded-For').split(',')[0].strip()
     return request.remote_addr
 
-# User-Agent থেকে সহজ নাম বের করার লজিক
+# নিখুঁত ব্রাউজার ও স্ক্রিপ্ট ডিটেকশন মডিউল
 def get_browser_or_client():
     ua = request.headers.get('User-Agent', '').lower()
     if not ua:
         return "Unknown Client"
+    
+    # ১. স্ক্রিপ্ট, কমান্ড লাইন এবং অটোমেশন টুলস
     if "curl" in ua:
         return "cURL Script"
     elif "python-requests" in ua:
         return "Python Script"
     elif "postman" in ua:
         return "Postman"
-    elif "chrome" in ua and "safari" in ua and "edge" not in ua:
-        return "Chrome Browser"
+    elif "node-fetch" in ua or "axios" in ua:
+        return "NodeJS Script"
+    elif "go-http-client" in ua:
+        return "Go Script"
+    
+    # ২. স্পেসিফিক ব্রাউজার ইঞ্জিন ফিল্টার (সঠিক ক্রম অনুযায়ী)
+    elif "edg/" in ua or "edge" in ua:
+        return "Edge Browser"
+    elif "opr/" in ua or "opera" in ua:
+        return "Opera Browser"
+    elif "brave" in ua:
+        return "Brave Browser"
     elif "firefox" in ua:
         return "Firefox Browser"
+    elif "chrome" in ua and "safari" in ua:
+        return "Chrome Browser"
     elif "safari" in ua and "chrome" not in ua:
         return "Safari Browser"
-    elif "edge" in ua:
-        return "Edge Browser"
+    
     return request.headers.get('User-Agent', '').split('/')[0]
 
 @app.route('/dashboard', methods=['GET', 'POST'])
@@ -70,7 +84,7 @@ def dashboard():
                     msg = f"Error: The key '{new_key}' already exists in the database!"
                     msg_type = "danger"
                 else:
-                    # BD Timezone এ expiry হিসাব করা হচ্ছে
+                    # বিডি টাইমজোনে expiry হিসাব করা হচ্ছে
                     expiry_date = get_bd_time() + datetime.timedelta(days=days)
                     expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S') + " BDT"
                     
@@ -80,8 +94,8 @@ def dashboard():
                         "ip_locked": bool(ip_locked),
                         "locked_ip": manual_ip if manual_ip else None,
                         "last_used": None,
-                        "last_client": "None",       # নতুন ফিল্ড: ব্রাউজার/স্ক্রিপ্ট নেম
-                        "request_logs": [],          # নতুন ফিল্ড: সব রিকোয়েস্ট পাঠানো আইপির অ্যারে
+                        "last_client": "None",       # ব্রাউজার/স্ক্রিপ্ট নেম ট্র্যাকার ফিল্ড
+                        "request_logs": [],          # ইউনিক আইপি লগ অ্যারে ফিল্ড
                         "is_active": True 
                     }
                     
@@ -156,7 +170,7 @@ def check_uid():
     uid = request.args.get('uid')
     user_key = request.args.get('key')
     user_ip = get_client_ip()
-    client_name = get_browser_or_client()  # ইউজার এজেন্ট ডিটেকশন
+    client_name = get_browser_or_client() 
 
     if not uid or not user_key:
         return jsonify({"error": True, "message": "Missing uid or key parameter"}), 400
@@ -165,13 +179,13 @@ def check_uid():
     if not key_data:
         return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
 
-    # ডাইনামিক ইউজ, ব্রাউজার নেম আপডেট এবং ইউনিক আইপি পুশ লগ লজিক
+    # ডাইনামিক ইউজ, ব্রাউজার নেম এবং ইউনিক আইপি অ্যারে লগ মেইনটেইন
     now_str = get_bd_time().strftime('%Y-%m-%d %H:%M:%S') + " BDT"
     keys_collection.update_one(
         {"key": user_key}, 
         {
             "$set": {"last_used": now_str, "last_client": client_name},
-            "$addToSet": {"request_logs": user_ip}  # ইউনিক আইপিগুলোকে অ্যারেতে সেভ রাখবে
+            "$addToSet": {"request_logs": user_ip} 
         }
     )
 
@@ -181,16 +195,13 @@ def check_uid():
     expiry_time_str = key_data.get("expires_at")
     if expiry_time_str:
         try:
-            # " BDT" অংশটি ট্রিম করে কম্পেয়ার করা হচ্ছে
             clean_expiry = expiry_time_str.replace(" BDT", "")
             expiry_time = datetime.datetime.strptime(clean_expiry, '%Y-%m-%d %H:%M:%S')
-            
-            # টাইমজোন ছাড়া কম্পারিজনের জন্য অবজেক্টকে বিডি জোনে আনা
             current_bd_naive = datetime.datetime.strptime(get_bd_time().strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')
             
             if current_bd_naive > expiry_time:
                 return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
-        except Exception as e:
+        except Exception:
             pass 
 
     if key_data.get("ip_locked"):
