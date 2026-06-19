@@ -9,20 +9,16 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { 
-            background: linear-gradient(rgba(4, 2, 8, 0.88), rgba(4, 2, 8, 0.97)), url("{{ url_for('static', filename='images/bg.jpg') }}") no-repeat center center fixed; 
+            background: linear-gradient(rgba(4, 2, 8, 0.85), rgba(4, 2, 8, 0.95)), url("{{ url_for('static', filename='images/bg.jpg') }}") no-repeat center center fixed; 
             background-size: cover;
             color: #f1f5f9; 
         }
-        .neon-border-emerald { border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16, 185, 129, 0.03); }
-        .neon-border-blue { border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 0 20px rgba(59, 130, 246, 0.03); }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        .neon-border-emerald { border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16, 185, 129, 0.03); backdrop-blur: md; }
+        .neon-border-blue { border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 0 20px rgba(59, 130, 246, 0.03); backdrop-blur: md; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
         .swal2-popup { background: #090514 !important; border: 1px solid #1e1b4b !important; color: #f1f5f9 !important; border-radius: 1rem !important; }
-        
-        /* Spoiler blur classes */
-        .spoiler-blur { filter: blur(5px); transition: filter 0.3s ease; cursor: pointer; }
-        .spoiler-blur:hover, .spoiler-blur:active { filter: blur(0px); }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 flex flex-col justify-between">
@@ -31,105 +27,87 @@
         
         <header class="flex flex-col sm:flex-row justify-between items-center p-5 bg-slate-950/70 backdrop-blur-xl rounded-2xl border border-slate-900 mb-8 animate__animated animate__fadeInDown">
             <div class="flex items-center gap-4 mb-4 sm:mb-0">
-                <img src="{{ url_for('static', filename='images/logo.jpg') }}" class="w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
+                <div class="relative">
+                    <div class="absolute -inset-0.5 bg-emerald-500 rounded-xl blur opacity-30 animate-pulse"></div>
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" class="relative w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
+                </div>
                 <div>
                     <h1 class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">BENJA HEX API</h1>
-                    <p class="text-[9px] text-slate-500 font-mono tracking-widest uppercase">Live Polling Node Engine Active</p>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <p class="text-[9px] text-slate-500 font-mono tracking-widest uppercase">Live Matrix Grid: Streaming</p>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <button onclick="openManualBanModal()" class="px-3 py-2 text-xs font-mono font-bold bg-amber-950/40 text-amber-400 border border-amber-900/40 rounded-xl hover:bg-amber-600 hover:text-black transition-all">Execute IP Ban</button>
-                <a href="/logout" class="px-4 py-2 text-xs font-mono font-bold bg-red-950/20 text-red-400 border border-red-900/40 rounded-xl hover:bg-red-500 hover:text-white transition-all">Terminate</a>
-            </div>
+            <a href="/logout" class="group flex items-center gap-2 px-4 py-2 text-xs font-mono font-bold bg-red-950/20 text-red-400 border border-red-900/40 rounded-xl hover:bg-red-500 hover:text-white transition-all duration-300">
+                <span>Terminate Session</span>
+            </a>
         </header>
 
         {% if msg %}
-            <div class="p-4 mb-6 text-xs font-mono rounded-xl {% if 'Error' in msg %} bg-red-950/30 text-red-400 border border-red-900/50 {% else %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% endif %}">
+            <div class="p-4 mb-6 text-xs font-mono rounded-xl animate__animated animate__backInRight {% if 'Error' in msg or 'Backend' in msg %} bg-red-950/30 text-red-400 border border-red-900/50 {% else %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% endif %}">
                 <span>{{ msg }}</span>
             </div>
         {% endif %}
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <div class="lg:col-span-1 space-y-6">
+            <div class="lg:col-span-1 animate__animated animate__fadeInLeft">
                 <div class="bg-slate-950/50 p-6 rounded-2xl neon-border-emerald">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-4 border-b border-slate-900 pb-2">Generate Token</h3>
+                    <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Key Configuration</h3>
+                    </div>
+                    
                     <form method="POST" class="space-y-4">
                         <div>
-                            <label class="block mb-1 text-[10px] font-mono text-slate-500 uppercase">Key Name</label>
-                            <input type="text" name="key_name" required placeholder="VIP_ACCESS" class="w-full px-4 py-2 bg-black/40 border border-slate-900 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50">
+                            <label class="block mb-1 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Key Token</label>
+                            <input type="text" name="key_name" required placeholder="VIP_ACCESS" class="w-full px-4 py-2.5 bg-black/40 border border-slate-900 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-emerald-500/50">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Lifespan (Days)</label>
+                            <input type="number" name="expiry_days" min="1" required placeholder="30" class="w-full px-4 py-2.5 bg-black/40 border border-slate-900 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-emerald-500/50">
                         </div>
                         
-                        <div>
-                            <label class="block mb-1 text-[10px] font-mono text-slate-500 uppercase">Expiration Type</label>
-                            <select name="expiry_type" id="expiry_type" onchange="handleExpiryTypeChange()" class="w-full px-3 py-2 bg-black/60 border border-slate-900 rounded-xl text-xs font-mono text-slate-300 focus:outline-none">
-                                <option value="days">Relative Days Counter</option>
-                                <option value="date">Custom Interactive Calendar</option>
-                                <option value="unlimited">Infinite Lifespan (Unlimited)</option>
-                            </select>
-                        </div>
-
-                        <div id="expiry_days_box">
-                            <label class="block mb-1 text-[10px] font-mono text-slate-500 uppercase">Lifespan (Days)</label>
-                            <input type="number" name="expiry_days" min="1" placeholder="30" class="w-full px-4 py-2 bg-black/40 border border-slate-900 rounded-xl text-xs font-mono text-white focus:outline-none">
-                        </div>
-
-                        <div id="expiry_date_box" class="hidden">
-                            <label class="block mb-1 text-[10px] font-mono text-slate-500 uppercase">Select Target Date & Time 📅</label>
-                            <input type="datetime-local" name="custom_date" class="w-full px-4 py-2 bg-black/40 border border-slate-900 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50">
-                        </div>
-
-                        <div class="bg-black/30 p-3 rounded-xl border border-slate-900 space-y-2">
+                        <div class="bg-black/30 p-3 rounded-xl border border-slate-900 space-y-3">
                             <div class="flex items-center justify-between">
-                                <label class="text-xs font-mono text-slate-400">Lock IP Target</label>
-                                <input type="checkbox" name="ip_locked" id="ip_locked" class="w-4 h-4 accent-emerald-500" onchange="document.getElementById('manual_ip_container').style.display = this.checked ? 'block' : 'none'">
+                                <label class="text-xs font-mono text-slate-400">Enable IP Protection</label>
+                                <input type="checkbox" name="ip_locked" id="ip_locked" class="w-4 h-4 accent-emerald-500 cursor-pointer" onchange="toggleManualIpBox()">
                             </div>
-                            <div id="manual_ip_container" class="hidden">
-                                <input type="text" name="manual_ip" placeholder="Target Proxy IP address" class="w-full px-3 py-2 bg-black/60 border border-slate-900 rounded-lg text-xs font-mono text-slate-300 focus:outline-none">
+                            <div id="manual_ip_container" class="hidden animate__animated animate__fadeIn">
+                                <label class="block mb-1 text-[9px] font-mono uppercase text-slate-500 tracking-wider">Manual IP Target (Optional)</label>
+                                <input type="text" name="manual_ip" placeholder="e.g., 103.45.12.89" class="w-full px-3 py-2 bg-black/60 border border-slate-900 rounded-lg text-xs font-mono text-slate-300 focus:outline-none focus:border-emerald-500/50">
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full py-2.5 text-xs font-mono font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 rounded-xl uppercase tracking-widest">Deploy Matrix Key</button>
+                        <button type="submit" class="w-full py-3 text-xs font-mono font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 rounded-xl hover:from-emerald-300 hover:to-teal-300 transition-all uppercase tracking-widest">
+                            Deploy Token
+                        </button>
                     </form>
                 </div>
             </div>
 
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 animate__animated animate__fadeInRight">
                 <div class="bg-slate-950/50 p-6 rounded-2xl neon-border-blue flex flex-col h-full">
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-blue-400 mb-4 border-b border-slate-900 pb-2">Active Database Key Vault</h3>
+                    <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3 justify-between">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-400">Database Registry</h3>
+                        <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+                            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Live Sync Active
+                        </div>
+                    </div>
                     
-                    <div class="overflow-x-auto rounded-xl border border-slate-900 bg-black/10 custom-scrollbar max-h-[350px]">
+                    <div class="overflow-x-auto rounded-xl border border-slate-900 bg-black/10 custom-scrollbar flex-grow max-h-[420px]">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-slate-950/80 text-[10px] font-mono text-slate-500 border-b border-slate-900 sticky top-0 z-10">
-                                    <th class="p-3 uppercase">Token Name</th>
-                                    <th class="p-3 uppercase">Time Context (UTC Dropdown)</th>
-                                    <th class="p-3 uppercase">Security IP Mapping</th>
-                                    <th class="p-3 uppercase">Device Agent</th>
-                                    <th class="p-3 uppercase text-center">Operation Panel</th>
+                                <tr class="bg-slate-950/80 text-[10px] font-mono text-slate-500 border-b border-slate-900 sticky top-0 z-10 tracking-wider">
+                                    <th class="p-3 uppercase">Token</th>
+                                    <th class="p-3 uppercase">Expiration (UTC)</th>
+                                    <th class="p-3 uppercase">Security IP</th>
+                                    <th class="p-3 uppercase">Last Dynamic Use</th>
+                                    <th class="p-3 uppercase text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="keys-table-body" class="divide-y divide-slate-900 text-xs font-mono">
-                                <tr><td colspan="5" class="p-4 text-center text-slate-600 italic">Connecting stream network...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="bg-slate-950/50 p-6 rounded-2xl border border-red-950/50 flex flex-col">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-red-500 mb-3 border-b border-slate-900 pb-2">Global IP Execution Blacklist Matrix</h3>
-                    <div class="overflow-x-auto rounded-xl border border-slate-900 bg-black/10 custom-scrollbar max-h-[220px]">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-950/80 text-[9px] font-mono text-slate-500 border-b border-slate-900 sticky top-0">
-                                    <th class="p-2 uppercase">Banned Node Proxy IP</th>
-                                    <th class="p-2 uppercase">Identified App Layer</th>
-                                    <th class="p-2 uppercase">Ban Lifecycle / Countdown</th>
-                                    <th class="p-2 uppercase text-center">Action Filter</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ban-table-body" class="divide-y divide-slate-900 text-xs font-mono">
-                                <tr><td colspan="4" class="p-4 text-center text-slate-600 italic">No blacklisted network proxies.</td></tr>
+                                <tr><td colspan="5" class="p-8 text-center text-slate-600 italic">Syncing system states...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -139,274 +117,154 @@
         </div>
     </div>
 
-    <div id="hidden-forms-pool" class="hidden"></div>
+    <div id="form-container" class="hidden"></div>
+
+    <footer class="mt-12 border-t border-slate-900 pt-6 flex flex-col items-center gap-3">
+        <div class="text-[10px] font-mono tracking-widest text-slate-500 uppercase">Developed & Managed by <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 font-bold">BENJA HEX</span></div>
+    </footer>
 
     <script>
-        // Global system time tracking variables for formats toggling
-        let timeDisplayFormat = "default"; // "default", "timestamp", "remaining"
-        
-        function handleExpiryTypeChange() {
-            const type = document.getElementById('expiry_type').value;
-            document.getElementById('expiry_days_box').style.display = type === 'days' ? 'block' : 'none';
-            document.getElementById('expiry_date_box').style.display = type === 'date' ? 'block' : 'none';
+        function toggleManualIpBox() {
+            const checkBox = document.getElementById('ip_locked');
+            const container = document.getElementById('manual_ip_container');
+            container.style.display = checkBox.checked ? 'block' : 'none';
         }
 
-        function toggleTimeFormatGlobal() {
-            const formats = ["default", "timestamp", "remaining"];
-            let idx = formats.indexOf(timeDisplayFormat);
-            timeDisplayFormat = formats[(idx + 1) % formats.length];
-            fetchLiveDatabaseSystem();
-        }
-
-        // Real-Time System Parser
-        async function fetchLiveDatabaseSystem() {
+        // Live Pipeline Long-Polling Sync Module
+        async function fetchLiveKeysRegistry() {
             try {
-                const res = await fetch('/api/live_data');
-                if(!res.ok) return;
-                const data = await res.json();
+                const response = await fetch('/api/live_keys');
+                if (!response.ok) return;
+                const keys = await response.json();
                 
-                const sTime = new Date(data.server_time.replace(" ", "T") + "Z");
-                
-                // 1. RENDERING KEY DATABASE VAULT
-                const kBody = document.getElementById('keys-table-body');
-                let kHtml = "";
-                let fHtml = "";
+                const tbody = document.getElementById('keys-table-body');
+                let htmlOutput = "";
+                let formContainerHtml = "";
 
-                if(data.keys.length === 0){
-                    kBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-600 italic">No records.</td></tr>';
-                } else {
-                    data.keys.forEach(k => {
-                        const token = k.key;
-                        const isAct = k.is_active !== false;
-                        
-                        // User-Agent Display Mapping
-                        let agentLabel = k.last_agent ? `<span class="text-slate-400 bg-slate-900 px-2 py-0.5 rounded text-[10px]">${k.last_agent}</span>` : `<span class="text-slate-600 italic">No Hit</span>`;
-                        
-                        // IP Mapping Security Display with Spoiler Blur
-                        let ipMapping = `<span class="text-slate-600 italic">No Lock</span>`;
-                        if(k.ip_locked) {
-                            if(k.locked_ip) {
-                                ipMapping = `<span class="text-emerald-400 font-bold bg-emerald-950/20 px-2 py-0.5 rounded border border-emerald-900/30 spoiler-blur text-[11px]" title="Hover/Click to Reveal">${k.locked_ip}</span>`;
-                            } else {
-                                ipMapping = `<span class="text-amber-500 text-[10px]">Awaiting 1st Log</span>`;
-                            }
-                        }
-
-                        // Time parsing layer
-                        let timeString = k.expires_at;
-                        if(k.expires_at !== "UNLIMITED") {
-                            const expDate = new Date(k.expires_at.replace(" ", "T") + "Z");
-                            if(timeDisplayFormat === "timestamp") {
-                                timeString = expDate.getTime();
-                            } else if (timeDisplayFormat === "remaining") {
-                                let diff = expDate - sTime;
-                                if(diff <= 0) { timeString = "EXPIRED"; }
-                                else {
-                                    let hours = Math.floor(diff / (1000 * 60 * 60));
-                                    let mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                                    timeString = `${hours}h ${mins}m left`;
-                                }
-                            }
-                        }
-
-                        const tLabel = isAct ? `<span class="text-slate-200 font-bold">${token}</span>` : `<span class="text-red-500 line-through opacity-50">${token}</span>`;
-                        const pauseIcon = isAct ? `<svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` : `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>`;
-
-                        kHtml += `
-                            <tr class="hover:bg-slate-900/20 transition-all">
-                                <td class="p-3">${tLabel}</td>
-                                <td class="p-3 text-slate-400 cursor-pointer hover:text-blue-400 text-[11px] underline decoration-dotted" onclick="toggleTimeFormatGlobal()" title="Click to cycle formatting options">${timeString}</td>
-                                <td class="p-3">${ipMapping}</td>
-                                <td class="p-3">${agentLabel}</td>
-                                <td class="p-3">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <button type="button" onclick="openKeyConnectionsHistoryPopup('${token}')" title="View Token Network Connection Nodes History">👤</button>
-                                        <button type="button" onclick="openEditKeyModal('${token}')" title="Modify Key Expiration Time Metadata">📝</button>
-                                        <button type="button" onclick="document.getElementById('f-pause-${token}').submit()">${pauseIcon}</button>
-                                        <button type="button" onclick="confirmDeleteToken('${token}')" class="text-red-500">❌</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                        fHtml += `<form id="f-delete-${token}" action="/delete_key/${token}" method="POST" class="hidden"></form>
-                                 <form id="f-pause-${token}" action="/toggle_pause/${token}" method="POST" class="hidden"></form>`;
-                    });
-                    kBody.innerHTML = kHtml;
+                if (keys.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-600 italic">No localized records found.</td></tr>';
+                    return;
                 }
 
-                // 2. RENDERING BLACKLIST MANAGEMENT
-                const bBody = document.getElementById('ban-table-body');
-                let bHtml = "";
-                if(data.banned_ips.length === 0){
-                    bBody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-slate-600 text-[11px] italic">No proxies inside ban firewall matrix layer.</td></tr>';
-                } else {
-                    data.banned_ips.forEach(b => {
-                        let countdownText = b.ban_expiry;
-                        if(b.ban_expiry !== "PERMANENT") {
-                            const expDate = new Date(b.ban_expiry.replace(" ", "T") + "Z");
-                            let diff = expDate - sTime;
-                            if(diff <= 0) { countdownText = "Expiring Process.."; }
-                            else {
-                                let h = Math.floor(diff / (1000 * 60 * 60));
-                                let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                                let s = Math.floor((diff % (1000 * 60)) / 1000);
-                                countdownText = `⏳ ${h}h ${m}m ${s}s left`;
-                            }
+                keys.forEach(k => {
+                    const token = k.key || 'UNKNOWN';
+                    const expires = k.expires_at || 'PERMANENT';
+                    const lastUsed = k.last_used || 'Never Used';
+                    const isActive = k.is_active !== false;
+
+                    // IP Filter Status Layout
+                    let ipStatusText = `<span class="text-slate-500 bg-slate-950/40 px-2 py-0.5 rounded border border-slate-800 text-[10px] italic">No Protection</span>`;
+                    if (k.ip_locked) {
+                        if (k.locked_ip) {
+                            ipStatusText = `<span class="text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-900/40">${k.locked_ip}</span>`;
+                        } else {
+                            ipStatusText = `<span class="text-yellow-500 bg-yellow-950/20 px-2 py-0.5 rounded border border-yellow-900/30 text-[10px]">Awaiting 1st Log</span>`;
                         }
-                        bHtml += `
-                            <tr class="hover:bg-red-950/10 transition-all text-[11px]">
-                                <td class="p-2 font-bold text-red-400 spoiler-blur">${b.ip}</td>
-                                <td class="p-2 text-slate-400">${b.agent || 'Manual Trigger'}</td>
-                                <td class="p-2 text-amber-500 font-mono">${countdownText}</td>
-                                <td class="p-2 text-center">
-                                    <button onclick="unbanNetworkProxy('${b.ip}')" class="bg-emerald-950/40 text-emerald-400 border border-emerald-900 px-2 py-0.5 rounded hover:bg-emerald-500 hover:text-black">UNBAN</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    bBody.innerHTML = bHtml;
-                }
-                document.getElementById('hidden-forms-pool').innerHTML = fHtml;
-            } catch(e) { console.error(e); }
-        }
+                    }
 
-        // ACTION MODAL POPUPS (SWEETALERT2 INTERACTIVE GRAPHICS)
+                    // Active vs Pause Color Token Layout
+                    const tokenLabel = isActive ? 
+                        `<span class="text-slate-300 font-bold">${token}</span>` : 
+                        `<span class="text-red-500 font-bold line-through tracking-widest opacity-60" title="Paused Token Layer">${token}</span>`;
 
-        async function openKeyConnectionsHistoryPopup(keyName) {
-            const res = await fetch(`/api/key_history/${keyName}`);
-            const logs = await res.json();
-            let logRows = "";
-            if(logs.length === 0) {
-                logRows = `<tr><td colspan="3" class="p-3 text-center text-slate-500 italic">No recorded footprint history log tracks found.</td></tr>`;
-            } else {
-                logs.forEach(l => {
-                    logRows += `
-                        <tr class="border-b border-slate-900 text-left text-xs font-mono">
-                            <td class="p-2 font-bold text-blue-400 spoiler-blur">${l.ip}</td>
-                            <td class="p-2 text-slate-300">${l.agent}</td>
-                            <td class="p-2 text-slate-500 text-[10px]">${l.timestamp}</td>
+                    // Action Icon Controllers Structure
+                    const pauseBtnIcon = isActive ? 
+                        `<svg class="w-4 h-4 text-yellow-500 hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` : 
+                        `<svg class="w-4 h-4 text-emerald-500 hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>`;
+
+                    htmlOutput += `
+                        <tr class="hover:bg-slate-900/20 transition-all ${!isActive ? 'bg-red-950/5' : ''}">
+                            <td class="p-3">${tokenLabel}</td>
+                            <td class="p-3 text-slate-400 text-[11px]">${expires}</td>
+                            <td class="p-3">${ipStatusText}</td>
+                            <td class="p-3 text-slate-300 text-[11px] font-bold">${lastUsed}</td>
+                            <td class="p-3">
+                                <div class="flex items-center justify-center gap-3">
+                                    <button type="button" onclick="confirmPauseToggle('${token}', ${isActive})" title="${isActive ? 'Pause Key' : 'Resume Key'}">
+                                        ${pauseBtnIcon}
+                                    </button>
+                                    
+                                    ${k.ip_locked ? `
+                                    <button type="button" onclick="confirmResetIP('${token}')" title="Reset Locked IP" class="text-blue-500 hover:text-blue-400 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
+                                    </button>
+                                    ` : ''}
+                                    
+                                    <button type="button" onclick="confirmDeleteKey('${token}')" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                     `;
+
+                    // Hidden operational native shadow form injections
+                    formContainerHtml += `
+                        <form id="form-delete-${token}" action="/delete_key/${token}" method="POST" class="hidden"></form>
+                        <form id="form-pause-${token}" action="/toggle_pause/${token}" method="POST" class="hidden"></form>
+                        <form id="form-reset-${token}" action="/reset_ip/${token}" method="POST" class="hidden"></form>
+                    `;
                 });
+
+                tbody.innerHTML = htmlOutput;
+                document.getElementById('form-container').innerHTML = formContainerHtml;
+            } catch (err) {
+                console.error("Live sync failed:", err);
             }
-
-            Swal.fire({
-                title: `Network Node Logs [ ${keyName} ]`,
-                html: `
-                    <div class="overflow-y-auto max-h-[300px] custom-scrollbar rounded-xl border border-slate-900 bg-black/40">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-950 text-[10px] text-slate-500 uppercase font-mono border-b border-slate-900">
-                                <tr><th class="p-2">IP Proxy Node</th><th class="p-2">App Client Type</th><th class="p-2">Timestamp (UTC)</th></tr>
-                            </thead>
-                            <tbody>${logRows}</tbody>
-                        </table>
-                    </div>`,
-                showConfirmButton: false
-            });
         }
 
-        function openEditKeyModal(keyName) {
+        // Beautiful Popup Confirm Actions Handlers
+        function confirmDeleteKey(keyName) {
             Swal.fire({
-                title: 'Modify Token Expiry Lifespan Matrix',
-                html: `
-                    <div class="text-left space-y-3 font-mono text-xs">
-                        <div>
-                            <label class="text-slate-400 block mb-1">Expiration Type Structure</label>
-                            <select id="edit_exp_type" class="w-full p-2 bg-black border border-slate-900 text-slate-300 rounded-xl" onchange="document.getElementById('edit_cal_box').style.display=this.value==='date'?'block':'none'">
-                                <option value="date">Set Custom Target Calendar</option>
-                                <option value="unlimited">Convert to Infinite (Unlimited)</option>
-                            </select>
-                        </div>
-                        <div id="edit_cal_box">
-                            <label class="text-slate-400 block mb-1">Pick Target Date-Time 📅</label>
-                            <input type="datetime-local" id="edit_date_val" class="w-full p-2 bg-black border border-slate-900 text-white rounded-xl">
-                        </div>
-                    </div>`,
-                showCancelButton: true,
-                confirmButtonText: 'Commit Parameters Mutation',
-                preConfirm: () => {
-                    return {
-                        key: keyName,
-                        type: document.getElementById('edit_exp_type').value,
-                        value: document.getElementById('edit_date_val').value
-                    }
-                }
-            }).then(async (result) => {
-                if(result.isConfirmed) {
-                    await fetch('/api/edit_key', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(result.value)
-                    });
-                    fetchLiveDatabaseSystem();
-                }
-            });
-        }
-
-        function openManualBanModal() {
-            Swal.fire({
-                title: 'Deploy Proxy Ban Blockade',
-                html: `
-                    <div class="text-left space-y-3 font-mono text-xs">
-                        <div>
-                            <label class="text-slate-400 block mb-1">Target Network IP Proxy Address</label>
-                            <input type="text" id="ban_ip_target" placeholder="103.88.x.x" class="w-full p-2 bg-black border border-slate-900 text-white rounded-xl">
-                        </div>
-                        <div>
-                            <label class="text-slate-400 block mb-1">Ban Lifespan</label>
-                            <select id="ban_duration_type" class="w-full p-2 bg-black border border-slate-900 text-slate-300 rounded-xl" onchange="document.getElementById('ban_cal_box').style.display=this.value==='custom'?'block':'none'">
-                                <option value="permanent">Permanent Blacklist Enforcement</option>
-                                <option value="custom">Timed Interception Window</option>
-                            </select>
-                        </div>
-                        <div id="ban_cal_box" class="hidden">
-                            <label class="text-slate-400 block mb-1">Auto Release Calendar Time 📅</label>
-                            <input type="datetime-local" id="ban_date_val" class="w-full p-2 bg-black border border-slate-900 text-white rounded-xl">
-                        </div>
-                    </div>`,
-                showCancelButton: true,
-                confirmButtonText: 'Execute Network Drop',
-                preConfirm: () => {
-                    return {
-                        ip: document.getElementById('ban_ip_target').value,
-                        type: document.getElementById('ban_duration_type').value,
-                        value: document.getElementById('ban_date_val').value,
-                        agent: "Manual Dashboard Execution"
-                    }
-                }
-            }).then(async (result) => {
-                if(result.isConfirmed && result.value.ip) {
-                    await fetch('/api/ban_ip', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(result.value)
-                    });
-                    fetchLiveDatabaseSystem();
-                }
-            });
-        }
-
-        async function unbanNetworkProxy(ipAddress) {
-            await fetch(`/api/unban_ip/${ipAddress}`, {method: 'POST'});
-            fetchLiveDatabaseSystem();
-        }
-
-        function confirmDeleteToken(keyName) {
-            Swal.fire({
-                title: 'Destroy Key Token Matrix?',
-                text: "Revokes authorization sequences instantly.",
+                title: 'Are you sure?',
+                text: 'You want to delete token: ' + keyName,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Destroy Secure Token'
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
-                if (result.isConfirmed) document.getElementById('f-delete-' + keyName).submit();
-            });
+                if (result.isConfirmed) {
+                    document.getElementById('form-delete-' + keyName).submit();
+                }
+            })
         }
 
-        // Loop execution engines
-        fetchLiveDatabaseSystem();
-        setInterval(fetchLiveDatabaseSystem, 1000); // প্রতি সেকেন্ডে লাইভ রিফ্রেশ ও কাউন্টডাউন রেন্ডারিং
+        function confirmPauseToggle(keyName, currentlyActive) {
+            Swal.fire({
+                title: currentlyActive ? 'Pause this key?' : 'Resume this key?',
+                text: currentlyActive ? `Clients using [ ${keyName} ] will instantly receive a suspended pause response.` : `Restores standard operational pipeline for [ ${keyName} ]`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: currentlyActive ? '#eab308' : '#10b981',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: currentlyActive ? 'Yes, Pause!' : 'Yes, Resume!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-pause-' + keyName).submit();
+                }
+            })
+        }
+
+        function confirmResetIP(keyName) {
+            Swal.fire({
+                title: 'Reset Locked IP?',
+                text: "This will unlock the key for the next device login target verification.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Yes, reset!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-reset-' + keyName).submit();
+                }
+            })
+        }
+
+        // Engine Ignition Interval Settings (Updates layout status every 3 seconds completely live)
+        fetchLiveKeysRegistry();
+        setInterval(fetchLiveKeysRegistry, 3000);
     </script>
 </body>
 </html>
