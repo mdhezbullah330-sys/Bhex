@@ -6,6 +6,7 @@
     <title>Quantum Key Control Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background: #040208; color: #f1f5f9; }
         .neon-border-emerald { border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16, 185, 129, 0.03); }
@@ -13,7 +14,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-        img { pointer-events: none; user-select: none; }
+        /* Custom SweetAlert Dark Theme styling */
+        .swal2-popup { background: #090514 !important; border: 1px solid #1e1b4b !important; color: #f1f5f9 !important; border-radius: 1rem !important; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 flex flex-col justify-between">
@@ -24,7 +26,7 @@
             <div class="flex items-center gap-4 mb-4 sm:mb-0">
                 <div class="relative">
                     <div class="absolute -inset-0.5 bg-emerald-500 rounded-xl blur opacity-30 animate-pulse"></div>
-                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" ondragstart="return false;" class="relative w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" class="relative w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
                 </div>
                 <div>
                     <h1 class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">BENJA HEX API</h1>
@@ -40,7 +42,7 @@
         </header>
 
         {% if msg %}
-            <div class="p-4 mb-6 text-xs font-mono rounded-xl animate__animated animate__backInRight {% if msg_type == 'success' %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% else %} bg-red-950/30 text-red-400 border border-red-900/50 {% endif %}">
+            <div class="p-4 mb-6 text-xs font-mono rounded-xl animate__animated animate__backInRight {% if 'Error' in msg or 'Backend' in msg %} bg-red-950/30 text-red-400 border border-red-900/50 {% else %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% endif %}">
                 <span>{{ msg }}</span>
             </div>
         {% endif %}
@@ -102,9 +104,7 @@
                                 {% for k in keys %}
                                 <tr class="hover:bg-slate-900/20 transition-all">
                                     <td class="p-3 font-bold text-slate-300">{{ k.get('key', 'UNKNOWN') }}</td>
-                                    <td class="p-3 text-slate-400 text-[11px]">
-                                        {{ k.get('expires_at', 'PERMANENT') }}
-                                    </td>
+                                    <td class="p-3 text-slate-400 text-[11px]">{{ k.get('expires_at', 'PERMANENT') }}</td>
                                     <td class="p-3">
                                         {% if k.get('ip_locked') %}
                                             {% if k.get('locked_ip') %}
@@ -113,25 +113,25 @@
                                                 <span class="text-yellow-500 bg-yellow-950/20 px-2 py-0.5 rounded border border-yellow-900/30 text-[10px]">Awaiting 1st Log</span>
                                             {% endif %}
                                         {% else %}
-                                            <span class="text-slate-600 italic">No Lock</span>
+                                            <span class="text-slate-500 bg-slate-950/40 px-2 py-0.5 rounded border border-slate-800 text-[10px] italic">No Protection</span>
                                         {% endif %}
                                     </td>
-                                    <td class="p-3 text-slate-400 text-[11px]">{{ k.get('last_used', 'Never Used') }}</td>
+                                    <td class="p-3 text-slate-300 text-[11px] font-bold">
+                                        {{ k.get('last_used') if k.get('last_used') else 'Never Used' }}
+                                    </td>
                                     <td class="p-3">
                                         <div class="flex items-center justify-center gap-3">
                                             {% if k.get('ip_locked') %}
-                                            <form action="/reset_ip/{{ k.get('key') }}" method="POST" onsubmit="return confirm('Reset locked IP address?');">
-                                                <button type="submit" title="Reset Locked IP" class="text-yellow-500 hover:text-yellow-400 transition-colors">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
-                                                </button>
-                                            </form>
+                                            <button type="button" onclick="confirmResetIP('{{ k.get(\'key\') }}')" title="Reset Locked IP" class="text-yellow-500 hover:text-yellow-400 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
+                                            </button>
+                                            <form id="form-reset-{{ k.get(\'key\') }}" action="/reset_ip/{{ k.get(\'key\') }}" method="POST" class="hidden"></form>
                                             {% endif %}
                                             
-                                            <form action="/delete_key/{{ k.get('key') }}" method="POST" onsubmit="return confirm('Delete this token?');">
-                                                <button type="submit" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                </button>
-                                            </form>
+                                            <button type="button" onclick="confirmDeleteKey('{{ k.get(\'key\') }}')" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                            <form id="form-delete-{{ k.get(\'key\') }}" action="/delete_key/{{ k.get(\'key\') }}" method="POST" class="hidden"></form>
                                         </div>
                                     </td>
                                 </tr>
@@ -160,6 +160,39 @@
             } else {
                 container.classList.add('hidden');
             }
+        }
+
+        // Beautiful SweetAlert2 Confirmation Popups
+        function confirmDeleteKey(keyName) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You want to delete token: ${keyName}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(`form-delete-${keyName}`).submit();
+                }
+            })
+        }
+
+        function confirmResetIP(keyName) {
+            Swal.fire({
+                title: 'Reset Locked IP?',
+                text: "This will unlock the key for the next device login.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#eab308',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Yes, reset!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(`form-reset-${keyName}`).submit();
+                }
+            })
         }
     </script>
 </body>
