@@ -34,13 +34,21 @@ def dashboard():
                 {"$set": {"key": new_key, "expires_at": expiry_date}},
                 upsert=True
             )
-            msg = f"Key '{new_key}' successfully added for {days} days!"
+            msg = f"Key '{new_key}' successfully deployed for {days} days!"
         else:
             msg = "Please fill all fields properly."
             msg_type = "danger"
 
     all_keys = list(keys_collection.find({}, {"_id": 0}))
     return render_template('dashboard.html', msg=msg, msg_type=msg_type, keys=all_keys)
+
+@app.route('/delete_key/<string:key_name>', methods=['POST'])
+def delete_key(key_name):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    keys_collection.delete_one({"key": key_name})
+    return redirect(url_for('dashboard'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -81,7 +89,7 @@ def check_uid():
         response = requests.get(f"{TARGET_URL}?uid={uid}&key=great", timeout=60)
         api_res = response.json()
     except Exception:
-        return jsonify({"error": True, "message": "API is unreachable"}), 500
+        return jsonify({"error": True, "message": "API took too long to respond or is down"}), 500
 
     if isinstance(api_res, dict):
         api_res.pop("credit", None)
