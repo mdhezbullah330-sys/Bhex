@@ -43,7 +43,7 @@
             <div class="flex items-center gap-4 mb-4 sm:mb-0">
                 <div class="relative">
                     <div class="absolute -inset-0.5 bg-emerald-500 rounded-xl blur opacity-30 animate-pulse"></div>
-                    <img src="/static/images/isolated (1).jpg" ondragstart="return false;" class="relative w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" ondragstart="return false;" class="relative w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
                 </div>
                 <div>
                     <h1 class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">BENJA HEX API</h1>
