@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 import requests
 import pymongo
 import datetime
+import pytz  # BD Timezone এর জন্য
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = "super_secret_session_encryption_key_999"
@@ -14,13 +15,38 @@ keys_collection = db["api_keys"]
 
 TARGET_URL = "http://raw.thug4ff.xyz/check"
 
-# Multi-Admin Authorization Array
 ADMIN_PASSWORDS = ["1nonly_talha", "hyceanx", "benjahexofficialx", "duryabx", "deeshanx"]
+
+# BD Timezone helper function
+def get_bd_time():
+    bd_tz = pytz.timezone('Asia/Dhaka')
+    return datetime.datetime.now(bd_tz)
 
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'):
         return request.headers.get('X-Forwarded-For').split(',')[0].strip()
     return request.remote_addr
+
+# User-Agent থেকে সহজ নাম বের করার লজিক
+def get_browser_or_client():
+    ua = request.headers.get('User-Agent', '').lower()
+    if not ua:
+        return "Unknown Client"
+    if "curl" in ua:
+        return "cURL Script"
+    elif "python-requests" in ua:
+        return "Python Script"
+    elif "postman" in ua:
+        return "Postman"
+    elif "chrome" in ua and "safari" in ua and "edge" not in ua:
+        return "Chrome Browser"
+    elif "firefox" in ua:
+        return "Firefox Browser"
+    elif "safari" in ua and "chrome" not in ua:
+        return "Safari Browser"
+    elif "edge" in ua:
+        return "Edge Browser"
+    return request.headers.get('User-Agent', '').split('/')[0]
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -44,8 +70,9 @@ def dashboard():
                     msg = f"Error: The key '{new_key}' already exists in the database!"
                     msg_type = "danger"
                 else:
-                    expiry_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)
-                    expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
+                    # BD Timezone এ expiry হিসাব করা হচ্ছে
+                    expiry_date = get_bd_time() + datetime.timedelta(days=days)
+                    expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S') + " BDT"
                     
                     key_data = {
                         "key": str(new_key), 
@@ -53,7 +80,9 @@ def dashboard():
                         "ip_locked": bool(ip_locked),
                         "locked_ip": manual_ip if manual_ip else None,
                         "last_used": None,
-                        "is_active": True # Default active state token topology
+                        "last_client": "None",       # নতুন ফিল্ড: ব্রাউজার/স্ক্রিপ্ট নেম
+                        "request_logs": [],          # নতুন ফিল্ড: সব রিকোয়েস্ট পাঠানো আইপির অ্যারে
+                        "is_active": True 
                     }
                     
                     keys_collection.insert_one(key_data)
@@ -127,10 +156,7 @@ def check_uid():
     uid = request.args.get('uid')
     user_key = request.args.get('key')
     user_ip = get_client_ip()
-
-    if user_key:
-        now_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + " UTC"
-        keys_collection.update_one({"key": user_key}, {"$set": {"last_used": now_str}})
+    client_name = get_browser_or_client()  # ইউজার এজেন্ট ডিটেকশন
 
     if not uid or not user_key:
         return jsonify({"error": True, "message": "Missing uid or key parameter"}), 400
@@ -139,17 +165,32 @@ def check_uid():
     if not key_data:
         return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
 
-    # 🛑 Pause Enforcement Filter Layer
+    # ডাইনামিক ইউজ, ব্রাউজার নেম আপডেট এবং ইউনিক আইপি পুশ লগ লজিক
+    now_str = get_bd_time().strftime('%Y-%m-%d %H:%M:%S') + " BDT"
+    keys_collection.update_one(
+        {"key": user_key}, 
+        {
+            "$set": {"last_used": now_str, "last_client": client_name},
+            "$addToSet": {"request_logs": user_ip}  # ইউনিক আইপিগুলোকে অ্যারেতে সেভ রাখবে
+        }
+    )
+
     if not key_data.get("is_active", True):
         return jsonify({"error": True, "message": f"Your access key '{user_key}' has been paused or temporarily suspended by admin"}), 403
 
     expiry_time_str = key_data.get("expires_at")
     if expiry_time_str:
         try:
-            expiry_time = datetime.datetime.strptime(expiry_time_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=datetime.timezone.utc)
-            if datetime.datetime.now(datetime.timezone.utc) > expiry_time:
+            # " BDT" অংশটি ট্রিম করে কম্পেয়ার করা হচ্ছে
+            clean_expiry = expiry_time_str.replace(" BDT", "")
+            expiry_time = datetime.datetime.strptime(clean_expiry, '%Y-%m-%d %H:%M:%S')
+            
+            # টাইমজোন ছাড়া কম্পারিজনের জন্য অবজেক্টকে বিডি জোনে আনা
+            current_bd_naive = datetime.datetime.strptime(get_bd_time().strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')
+            
+            if current_bd_naive > expiry_time:
                 return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
-        except Exception:
+        except Exception as e:
             pass 
 
     if key_data.get("ip_locked"):
