@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Key Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        body {
+            background: #040208;
+            color: #f1f5f9;
+        }
+        .neon-border-emerald { 
+            border: 1px solid rgba(16, 185, 129, 0.2); 
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.03); 
+        }
+        .neon-border-blue { 
+            border: 1px solid rgba(59, 130, 246, 0.2); 
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.03); 
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col justify-between">
+
+    <div class="max-w-6xl mx-auto w-full">
+        
+        <header class="flex flex-col sm:flex-row justify-between items-center p-5 bg-slate-950/60 backdrop-blur-xl rounded-2xl border border-slate-900 mb-8 animate__animated animate__fadeInDown">
+            <div class="flex items-center gap-4 mb-4 sm:mb-0">
+                <div class="relative">
+                    <div class="absolute -inset-0.5 bg-emerald-500 rounded-xl blur opacity-30 animate-pulse"></div>
+                    <img src="/static/images/isolated (1).jpg" onerror="this.src='https://i.imgur.com/8QpYwX1.png'" class="relative w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">TALHA WRAPPER</h1>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <p class="text-[9px] text-slate-500 font-mono tracking-widest uppercase">Node Matrix: Online</p>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="/logout" class="group flex items-center gap-2 px-4 py-2 text-xs font-mono font-bold bg-red-950/20 text-red-400 border border-red-900/40 rounded-xl hover:bg-red-500 hover:text-white transition-all duration-300">
+                <span>Terminate Session</span>
+                <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </a>
+        </header>
+
+        {% if msg %}
+            <div class="flex items-center gap-2 p-4 mb-6 text-xs font-mono rounded-xl animate__animated animate__backInRight {% if msg_type == 'success' %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% else %} bg-red-950/30 text-red-400 border border-red-900/50 {% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>{{ msg }}</span>
+            </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 animate__animated animate__fadeInLeft">
+                <div class="bg-slate-950/40 backdrop-blur-md p-6 rounded-2xl neon-border-emerald">
+                    <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Key Generation</h3>
+                    </div>
+                    
+                    <form method="POST" class="space-y-5">
+                        <div>
+                            <label class="block mb-2 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Key Token Identifier</label>
+                            <input type="text" name="key_name" required placeholder="e.g., THUG_PREMIUM" 
+                                   class="w-full px-4 py-3 bg-black/40 border border-slate-900 rounded-xl focus:outline-none focus:border-emerald-500/50 text-white text-sm font-mono transition-all">
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Lifespan Allocation (Days)</label>
+                            <input type="number" name="expiry_days" min="1" required placeholder="30" 
+                                   class="w-full px-4 py-3 bg-black/40 border border-slate-900 rounded-xl focus:outline-none focus:border-emerald-500/50 text-white text-sm font-mono transition-all">
+                        </div>
+                        <button type="submit" 
+                                class="w-full py-3 text-xs font-mono font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 rounded-xl hover:from-emerald-300 hover:to-teal-300 transition-all duration-300 transform scale-[1.01] flex items-center justify-center gap-2 uppercase tracking-widest">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Deploy Token</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 animate__animated animate__fadeInRight">
+                <div class="bg-slate-950/40 backdrop-blur-md p-6 rounded-2xl neon-border-blue flex flex-col h-full">
+                    <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.58 4 8 4s8-1.79 8-4M4 7c0-2.21 3.58-4 8-4s8 1.79 8 4m0 5c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-400">Database Registry</h3>
+                    </div>
+                    
+                    <div class="overflow-x-auto rounded-xl border border-slate-900 bg-black/10 custom-scrollbar flex-grow max-h-[320px]">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950/80 text-[10px] font-mono text-slate-500 border-b border-slate-900 sticky top-0 z-10 tracking-wider">
+                                    <th class="p-4 uppercase">Authentication Token</th>
+                                    <th class="p-4 uppercase">Expiration Dynamic (UTC)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-900 text-xs font-mono">
+                                {% for k in keys %}
+                                <tr class="hover:bg-slate-900/20 transition-all">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5 text-blue-500/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                            <span class="text-slate-300 font-bold tracking-wide">{{ k.key }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-slate-400">
+                                        {{ k.expires_at.strftime('%Y-%m-%d %H:%M:%S') if k.expires_at else 'PERMANENT' }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="p-8 text-center text-slate-600 font-mono italic">
+                                        No localized records found in terminal database.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="mt-8 text-center text-[10px] font-mono tracking-widest text-slate-600 uppercase">
+        Secure Encryption System Stack v2.0.26
+    </footer>
+
+</body>
+</html>
