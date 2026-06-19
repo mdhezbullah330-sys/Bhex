@@ -7,37 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        body {
-            background: #040208;
-            color: #f1f5f9;
-        }
-        .neon-border-emerald { 
-            border: 1px solid rgba(16, 185, 129, 0.2); 
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.03); 
-        }
-        .neon-border-blue { 
-            border: 1px solid rgba(59, 130, 246, 0.2); 
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.03); 
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.2);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 4px;
-        }
-        img {
-            pointer-events: none;
-            user-select: none;
-        }
+        body { background: #040208; color: #f1f5f9; }
+        .neon-border-emerald { border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16, 185, 129, 0.03); }
+        .neon-border-blue { border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 0 20px rgba(59, 130, 246, 0.03); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        img { pointer-events: none; user-select: none; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 flex flex-col justify-between">
 
-    <div class="max-w-6xl mx-auto w-full">
+    <div class="max-w-7xl mx-auto w-full">
         
         <header class="flex flex-col sm:flex-row justify-between items-center p-5 bg-slate-950/60 backdrop-blur-xl rounded-2xl border border-slate-900 mb-8 animate__animated animate__fadeInDown">
             <div class="flex items-center gap-4 mb-4 sm:mb-0">
@@ -53,16 +34,13 @@
                     </div>
                 </div>
             </div>
-            
             <a href="/logout" class="group flex items-center gap-2 px-4 py-2 text-xs font-mono font-bold bg-red-950/20 text-red-400 border border-red-900/40 rounded-xl hover:bg-red-500 hover:text-white transition-all duration-300">
                 <span>Terminate Session</span>
-                <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
             </a>
         </header>
 
         {% if msg %}
-            <div class="flex items-center gap-2 p-4 mb-6 text-xs font-mono rounded-xl animate__animated animate__backInRight {% if msg_type == 'success' %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% else %} bg-red-950/30 text-red-400 border border-red-900/50 {% endif %}">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="p-4 mb-6 text-xs font-mono rounded-xl animate__animated animate__backInRight {% if msg_type == 'success' %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% else %} bg-red-950/30 text-red-400 border border-red-900/50 {% endif %}">
                 <span>{{ msg }}</span>
             </div>
         {% endif %}
@@ -72,33 +50,33 @@
             <div class="lg:col-span-1 animate__animated animate__fadeInLeft">
                 <div class="bg-slate-950/40 backdrop-blur-md p-6 rounded-2xl neon-border-emerald">
                     <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3">
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Key Generation</h3>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Key Configuration</h3>
                     </div>
                     
-                    <form method="POST" class="space-y-5">
+                    <form method="POST" class="space-y-4">
                         <div>
-                            <label class="block mb-2 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Key Token Identifier</label>
-                            <div class="relative flex items-center">
-                                <input type="password" name="key_name" id="keyInput" required placeholder="e.g., VIP_ACCESS" 
-                                       class="w-full pl-4 pr-12 py-3 bg-black/40 border border-slate-900 rounded-xl focus:outline-none focus:border-emerald-500/50 text-white text-sm font-mono transition-all">
-                                <button type="button" onclick="toggleKeyVisibility()" class="absolute right-4 text-slate-500 hover:text-emerald-400 focus:outline-none">
-                                    <svg id="keyEyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                    </svg>
-                                </button>
+                            <label class="block mb-1 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Key Token</label>
+                            <input type="text" name="key_name" required placeholder="VIP_ACCESS" class="w-full px-4 py-2.5 bg-black/40 border border-slate-900 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-emerald-500/50">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Lifespan (Days)</label>
+                            <input type="number" name="expiry_days" min="1" required placeholder="30" class="w-full px-4 py-2.5 bg-black/40 border border-slate-900 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-emerald-500/50">
+                        </div>
+                        
+                        <div class="bg-black/30 p-3 rounded-xl border border-slate-900 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-mono text-slate-400">Enable IP Protection</label>
+                                <input type="checkbox" name="ip_locked" id="ip_locked" class="w-4 h-4 accent-emerald-500 cursor-pointer" onchange="toggleManualIpBox()">
+                            </div>
+                            <div id="manual_ip_container" class="hidden animate__animated animate__fadeIn">
+                                <label class="block mb-1 text-[9px] font-mono uppercase text-slate-500 tracking-wider">Manual IP Target (Optional)</label>
+                                <input type="text" name="manual_ip" placeholder="e.g., 103.45.12.89" class="w-full px-3 py-2 bg-black/60 border border-slate-900 rounded-lg text-xs font-mono text-slate-300 focus:outline-none focus:border-emerald-500/50">
+                                <p class="text-[9px] text-slate-600 font-mono mt-1">*Khaali rakhle prothom request er IP-te auto lock hobe.</p>
                             </div>
                         </div>
-                        <div>
-                            <label class="block mb-2 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Lifespan Allocation (Days)</label>
-                            <input type="number" name="expiry_days" min="1" required placeholder="30" 
-                                   class="w-full px-4 py-3 bg-black/40 border border-slate-900 rounded-xl focus:outline-none focus:border-emerald-500/50 text-white text-sm font-mono transition-all">
-                        </div>
-                        <button type="submit" 
-                                class="w-full py-3 text-xs font-mono font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 rounded-xl hover:from-emerald-300 hover:to-teal-300 transition-all duration-300 transform scale-[1.01] flex items-center justify-center gap-2 uppercase tracking-widest">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <span>Deploy Token</span>
+
+                        <button type="submit" class="w-full py-3 text-xs font-mono font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 rounded-xl hover:from-emerald-300 hover:to-teal-300 transition-all uppercase tracking-widest">
+                            Deploy Token
                         </button>
                     </form>
                 </div>
@@ -107,45 +85,56 @@
             <div class="lg:col-span-2 animate__animated animate__fadeInRight">
                 <div class="bg-slate-950/40 backdrop-blur-md p-6 rounded-2xl neon-border-blue flex flex-col h-full">
                     <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3">
-                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.58 4 8 4s8-1.79 8-4M4 7c0-2.21 3.58-4 8-4s8 1.79 8 4m0 5c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
                         <h3 class="text-sm font-bold uppercase tracking-wider text-blue-400">Database Registry</h3>
                     </div>
                     
-                    <div class="overflow-x-auto rounded-xl border border-slate-900 bg-black/10 custom-scrollbar flex-grow max-h-[320px]">
+                    <div class="overflow-x-auto rounded-xl border border-slate-900 bg-black/10 custom-scrollbar flex-grow max-h-[420px]">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-slate-950/80 text-[10px] font-mono text-slate-500 border-b border-slate-900 sticky top-0 z-10 tracking-wider">
-                                    <th class="p-4 uppercase">Authentication Token</th>
-                                    <th class="p-4 uppercase">Expiration Dynamic (UTC)</th>
-                                    <th class="p-4 uppercase text-center">Action</th>
+                                    <th class="p-3 uppercase">Token</th>
+                                    <th class="p-3 uppercase">Expiration (UTC)</th>
+                                    <th class="p-3 uppercase">Security IP</th>
+                                    <th class="p-3 uppercase">Last Dynamic Use</th>
+                                    <th class="p-3 uppercase text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-900 text-xs font-mono">
                                 {% for k in keys %}
                                 <tr class="hover:bg-slate-900/20 transition-all">
-                                    <td class="p-4">
-                                        <div class="flex items-center gap-2">
-                                            <svg class="w-3.5 h-3.5 text-blue-500/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                            <span class="text-slate-300 font-bold tracking-wide">{{ k.key }}</span>
+                                    <td class="p-3 font-bold text-slate-300">{{ k.key }}</td>
+                                    <td class="p-3 text-slate-400 text-[11px]">{{ k.expires_at.strftime('%Y-%m-%d %H:%M') if k.expires_at else 'PERMANENT' }}</td>
+                                    <td class="p-3">
+                                        {% if k.ip_locked %}
+                                            {% if k.locked_ip %}
+                                                <span class="text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-900/40">{{ k.locked_ip }}</span>
+                                            {% else %}
+                                                <span class="text-yellow-500 bg-yellow-950/20 px-2 py-0.5 rounded border border-yellow-900/30 text-[10px]">Awaiting 1st Log</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-slate-600 italic">No Lock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-3 text-slate-400 text-[11px]">{{ k.last_used if k.last_used else 'Never Used' }}</td>
+                                    <td class="p-3">
+                                        <div class="flex items-center justify-center gap-3">
+                                            {% if k.ip_locked %}
+                                            <form action="/reset_ip/{{ k.key }}" method="POST" onsubmit="return confirm('Reset locked IP address?');">
+                                                <button type="submit" title="Reset Locked IP" class="text-yellow-500 hover:text-yellow-400 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            <form action="/delete_key/{{ k.key }}" method="POST" onsubmit="return confirm('Delete this token?');">
+                                                <button type="submit" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </form>
                                         </div>
-                                    </td>
-                                    <td class="p-4 text-slate-400">
-                                        {{ k.expires_at.strftime('%Y-%m-%d %H:%M:%S') if k.expires_at else 'PERMANENT' }}
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <form action="/delete_key/{{ k.key }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this key?');">
-                                            <button type="submit" class="text-red-500 hover:text-red-400 transition-colors focus:outline-none">
-                                                <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
-                                        </form>
                                     </td>
                                 </tr>
                                 {% else %}
-                                <tr>
-                                    <td colspan="3" class="p-8 text-center text-slate-600 font-mono italic">
-                                        No localized records found in terminal database.
-                                    </td>
-                                </tr>
+                                <tr><td colspan="5" class="p-8 text-center text-slate-600 italic">No localized records found.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -156,20 +145,18 @@
         </div>
     </div>
 
-    <footer class="mt-8 text-center text-[10px] font-mono tracking-widest text-slate-600 uppercase">
-        Secure Encryption System Stack v2.0.26
+    <footer class="mt-12 border-t border-slate-900 pt-6 flex flex-col items-center gap-3">
+        <div class="text-[10px] font-mono tracking-widest text-slate-500 uppercase">Developed & Managed by <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 font-bold">BENJA HEX</span></div>
     </footer>
 
     <script>
-        function toggleKeyVisibility() {
-            const input = document.getElementById('keyInput');
-            const eye = document.getElementById('keyEyeIcon');
-            if (input.type === "password") {
-                input.type = "text";
-                eye.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>';
+        function toggleManualIpBox() {
+            const checkBox = document.getElementById('ip_locked');
+            const container = document.getElementById('manual_ip_container');
+            if (checkBox.checked) {
+                container.classList.remove('hidden');
             } else {
-                input.type = "password";
-                eye.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+                container.classList.add('hidden');
             }
         }
     </script>
