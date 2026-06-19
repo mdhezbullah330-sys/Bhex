@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 import requests
 import pymongo
-import datetime # ডিরেক্ট মডিউল ইমপোর্ট করা হলো সেফটি বাড়াতে
+import datetime
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = "super_secret_session_encryption_key_999"
@@ -30,32 +30,32 @@ def dashboard():
 
     if request.method == 'POST':
         try:
-            new_key = request.form.get('key_name')
+            new_key = request.form.get('key_name', '').strip()
             days = request.form.get('expiry_days', type=int)
             
             ip_locked = True if request.form.get('ip_locked') == 'on' else False
             manual_ip = request.form.get('manual_ip', '').strip()
 
             if new_key and days:
-                # 🛠️ একদম সেফ উপায়ে ডেট ক্যালকুলেশন এবং স্ট্রিং ফরম্যাটিং
-                now = datetime.datetime.now(datetime.timezone.utc)
-                expiry_date = now + datetime.timedelta(days=days)
-                expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
-                
-                key_data = {
-                    "key": str(new_key), 
-                    "expires_at": str(expiry_str), # ডাটাবেসে পিওর স্ট্রিং যাবে
-                    "ip_locked": bool(ip_locked),
-                    "locked_ip": manual_ip if manual_ip else None,
-                    "last_used": None
-                }
-                
-                keys_collection.update_one(
-                    {"key": new_key},
-                    {"$set": key_data},
-                    upsert=True
-                )
-                msg = f"Key '{new_key}' successfully deployed!"
+                # 🛑 চেক করা হচ্ছে কী-টি অলরেডি ডাটাবেসে আছে কিনা
+                existing_key = keys_collection.find_one({"key": new_key})
+                if existing_key:
+                    msg = f"Error: The key '{new_key}' already exists in the database!"
+                    msg_type = "danger"
+                else:
+                    expiry_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)
+                    expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    key_data = {
+                        "key": str(new_key), 
+                        "expires_at": str(expiry_str),
+                        "ip_locked": bool(ip_locked),
+                        "locked_ip": manual_ip if manual_ip else None,
+                        "last_used": None
+                    }
+                    
+                    keys_collection.insert_one(key_data)
+                    msg = f"Key '{new_key}' successfully deployed for {days} days!"
             else:
                 msg = "Please fill all fields properly."
                 msg_type = "danger"
@@ -67,7 +67,7 @@ def dashboard():
         all_keys = list(keys_collection.find({}, {"_id": 0}))
         return render_template('dashboard.html', msg=msg, msg_type=msg_type, keys=all_keys)
     except Exception as e:
-        return f"Template Rendering Error: {str(e)}. Please check your dashboard HTML fields."
+        return f"Template Error: {str(e)}"
 
 @app.route('/delete_key/<string:key_name>', methods=['POST'])
 def delete_key(key_name):
@@ -110,6 +110,11 @@ def check_uid():
     user_key = request.args.get('key')
     user_ip = get_client_ip()
 
+    # ⏱️ ডাইনামিক ইউজ ট্র্যাকিং (রিকোয়েস্ট আসা মাত্রই টাইম সবসময় আপডেট হবে)
+    if user_key:
+        now_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + " UTC"
+        keys_collection.update_one({"key": user_key}, {"$set": {"last_used": now_str}})
+
     if not uid or not user_key:
         return jsonify({"error": True, "message": "Missing uid or key parameter"}), 400
 
@@ -121,12 +126,12 @@ def check_uid():
     if expiry_time_str:
         try:
             expiry_time = datetime.datetime.strptime(expiry_time_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=datetime.timezone.utc)
-            now = datetime.datetime.now(datetime.timezone.utc)
-            if now > expiry_time:
+            if datetime.datetime.now(datetime.timezone.utc) > expiry_time:
                 return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
         except Exception:
             pass 
 
+    # 🛡️ IP লক চেকিং
     if key_data.get("ip_locked"):
         current_locked_ip = key_data.get("locked_ip")
         
@@ -136,12 +141,6 @@ def check_uid():
             
         if user_ip != current_locked_ip:
             return jsonify({"error": True, "message": "You are not whitelisted! IP mismatch."}), 403
-
-    now_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + " UTC"
-    keys_collection.update_one(
-        {"key": user_key}, 
-        {"$set": {"last_used": now_str}}
-    )
 
     try:
         response = requests.get(f"{TARGET_URL}?uid={uid}&key=great", timeout=60)
