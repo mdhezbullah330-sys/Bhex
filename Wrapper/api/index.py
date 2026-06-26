@@ -15,6 +15,7 @@ keys_collection = db["api_keys"]
 
 TARGET_URL = "http://raw.thug4ff.xyz/check"
 INFO_TARGET_URL = "http://raw.thug4ff.xyz/info"
+USERNAME_TARGET_URL = "http://raw.thug4ff.xyz/username"
 
 # Multi-Admin Authorization Array
 ADMIN_PASSWORDS = ["1nonly_talha", "hyceanx", "benjahexofficialx", "duryabx", "deeshanx"]
@@ -164,7 +165,6 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
 
-# --- UPDATED INFO ROUTE ---
 @app.route('/info', methods=['GET'])
 def get_info():
     uid = request.args.get('uid')
@@ -179,7 +179,6 @@ def get_info():
     if not key_data:
         return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
 
-    # লগ ও টাইম আপডেট
     now_str = get_bd_time().strftime('%Y-%m-%d %H:%M:%S') + " BDT"
     keys_collection.update_one(
         {"key": user_key}, 
@@ -192,7 +191,6 @@ def get_info():
     if not key_data.get("is_active", True):
         return jsonify({"error": True, "message": f"Your access key '{user_key}' has been paused or temporarily suspended by admin"}), 403
 
-    # এক্সপায়ারি চেক
     expiry_time_str = key_data.get("expires_at")
     if expiry_time_str:
         try:
@@ -203,7 +201,6 @@ def get_info():
                 return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
         except Exception: pass
 
-    # IP Locking Check
     if key_data.get("ip_locked"):
         current_locked_ip = key_data.get("locked_ip")
         if not current_locked_ip:
@@ -214,9 +211,65 @@ def get_info():
 
     try:
         response = requests.get(f"{INFO_TARGET_URL}?uid={uid}&key=great", timeout=60)
-        return jsonify(response.json()), response.status_code
+        data = response.json()
+        if isinstance(data, dict):
+            data.pop("credit", None)
+        return jsonify(data), response.status_code
     except Exception as e:
         return jsonify({"error": True, "message": "Failed to fetch info from remote server", "details": str(e)}), 500
+
+@app.route('/username', methods=['GET'])
+def get_username():
+    uid = request.args.get('uid')
+    user_key = request.args.get('key')
+    user_ip = get_client_ip()
+    client_name = get_browser_or_client()
+
+    if not uid or not user_key:
+        return jsonify({"error": True, "message": "Missing uid or key parameter"}), 400
+
+    key_data = keys_collection.find_one({"key": user_key})
+    if not key_data:
+        return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
+
+    now_str = get_bd_time().strftime('%Y-%m-%d %H:%M:%S') + " BDT"
+    keys_collection.update_one(
+        {"key": user_key}, 
+        {
+            "$set": {"last_used": now_str, "last_client": client_name},
+            "$addToSet": {"request_logs": user_ip} 
+        }
+    )
+
+    if not key_data.get("is_active", True):
+        return jsonify({"error": True, "message": f"Your access key '{user_key}' has been paused or temporarily suspended by admin"}), 403
+
+    expiry_time_str = key_data.get("expires_at")
+    if expiry_time_str:
+        try:
+            clean_expiry = expiry_time_str.replace(" BDT", "")
+            expiry_time = datetime.datetime.strptime(clean_expiry, '%Y-%m-%d %H:%M:%S')
+            current_bd_naive = datetime.datetime.strptime(get_bd_time().strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')
+            if current_bd_naive > expiry_time:
+                return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
+        except Exception: pass
+
+    if key_data.get("ip_locked"):
+        current_locked_ip = key_data.get("locked_ip")
+        if not current_locked_ip:
+            keys_collection.update_one({"key": user_key}, {"$set": {"locked_ip": user_ip}})
+            current_locked_ip = user_ip
+        if user_ip != current_locked_ip:
+            return jsonify({"error": True, "message": "You are not whitelisted! IP mismatch."}), 403
+
+    try:
+        response = requests.get(f"{USERNAME_TARGET_URL}?uid={uid}&key=great", timeout=60)
+        data = response.json()
+        if isinstance(data, dict):
+            data.pop("credit", None)
+        return jsonify(data), response.status_code
+    except Exception as e:
+        return jsonify({"error": True, "message": "Failed to fetch username from remote server", "details": str(e)}), 500
 
 @app.route('/check', methods=['GET'])
 def check_uid():
@@ -265,19 +318,11 @@ def check_uid():
     try:
         response = requests.get(f"{TARGET_URL}?uid={uid}&key=great", timeout=60)
         api_res = response.json()
-    except Exception:
-        return jsonify({"error": True, "message": "API took too long to respond or is down"}), 500
-
-    if isinstance(api_res, dict):
-        api_res.pop("credit", None)
-        custom_credit = {
-            "developer": "TEAM BENJA HEX",
-            "discord": "https://discord.gg/TKdd5GNhxq",
-            "youtube": "https://youtube.com/@benjahexofficial?si=DVyAs57DGUBe7jw7"
-        }
-        api_res = {**{"credit": custom_credit}, **api_res}
-
-    return jsonify(api_res), response.status_code
+        if isinstance(api_res, dict):
+            api_res.pop("credit", None)
+        return jsonify(api_res), response.status_code
+    except Exception as e:
+        return jsonify({"error": True, "message": "API took too long to respond or is down", "details": str(e)}), 500
 
 @app.route('/')
 def home():
