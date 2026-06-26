@@ -14,6 +14,7 @@ db = client["my_api_db"]
 keys_collection = db["api_keys"]
 
 TARGET_URL = "http://raw.thug4ff.xyz/check"
+INFO_TARGET_URL = "http://raw.thug4ff.xyz/info"
 
 # Multi-Admin Authorization Array
 ADMIN_PASSWORDS = ["1nonly_talha", "hyceanx", "benjahexofficialx", "duryabx", "deeshanx"]
@@ -46,7 +47,7 @@ def get_browser_or_client():
     elif "go-http-client" in ua:
         return "Go Script"
     
-    # ২. স্পেসিফিক ব্রাউজার ইঞ্জিন ফিল্টার (সঠিক ক্রম অনুযায়ী)
+    # ২. স্পেসিফিক ব্রাউজার ইঞ্জিন ফিল্টার (সঠিক ক্রম অনুযায়ী)
     elif "edg/" in ua or "edge" in ua:
         return "Edge Browser"
     elif "opr/" in ua or "opera" in ua:
@@ -164,6 +165,21 @@ def login():
 def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
+
+@app.route('/info', methods=['GET'])
+def get_info():
+    uid = request.args.get('uid')
+    key = request.args.get('key')
+    
+    if not uid or not key:
+        return jsonify({"error": True, "message": "Missing uid or key parameter"}), 400
+    
+    try:
+        # ৬০ সেকেন্ড টাইমআউটসহ কল
+        response = requests.get(f"{INFO_TARGET_URL}?uid={uid}&key={key}", timeout=60)
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        return jsonify({"error": True, "message": "Failed to fetch info from remote server", "details": str(e)}), 500
 
 @app.route('/check', methods=['GET'])
 def check_uid():
