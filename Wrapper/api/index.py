@@ -47,7 +47,7 @@ def get_browser_or_client():
     elif "go-http-client" in ua:
         return "Go Script"
     
-    # ২. স্পেসিফিক ব্রাউজার ইঞ্জিন ফিল্টার (সঠিক ক্রম অনুযায়ী)
+    # ২. স্পেসিফিক ব্রাউজার ইঞ্জিন ফিল্টার
     elif "edg/" in ua or "edge" in ua:
         return "Edge Browser"
     elif "opr/" in ua or "opera" in ua:
@@ -85,7 +85,6 @@ def dashboard():
                     msg = f"Error: The key '{new_key}' already exists in the database!"
                     msg_type = "danger"
                 else:
-                    # বিডি টাইমজোনে expiry হিসাব করা হচ্ছে
                     expiry_date = get_bd_time() + datetime.timedelta(days=days)
                     expiry_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S') + " BDT"
                     
@@ -95,8 +94,8 @@ def dashboard():
                         "ip_locked": bool(ip_locked),
                         "locked_ip": manual_ip if manual_ip else None,
                         "last_used": None,
-                        "last_client": "None",       # ব্রাউজার/স্ক্রিপ্ট নেম ট্র্যাকার ফিল্ড
-                        "request_logs": [],          # ইউনিক আইপি লগ অ্যারে ফিল্ড
+                        "last_client": "None",
+                        "request_logs": [],
                         "is_active": True 
                     }
                     
@@ -158,7 +157,6 @@ def login():
             return redirect(url_for('dashboard'))
         else:
             error = "Invalid Administrative Token Matrix! Try again."
-            
     return render_template('login.html', error=error)
 
 @app.route('/logout')
@@ -166,17 +164,56 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
 
+# --- UPDATED INFO ROUTE ---
 @app.route('/info', methods=['GET'])
 def get_info():
     uid = request.args.get('uid')
-    key = request.args.get('key')
-    
-    if not uid or not key:
+    user_key = request.args.get('key')
+    user_ip = get_client_ip()
+    client_name = get_browser_or_client()
+
+    if not uid or not user_key:
         return jsonify({"error": True, "message": "Missing uid or key parameter"}), 400
-    
+
+    key_data = keys_collection.find_one({"key": user_key})
+    if not key_data:
+        return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
+
+    # লগ ও টাইম আপডেট
+    now_str = get_bd_time().strftime('%Y-%m-%d %H:%M:%S') + " BDT"
+    keys_collection.update_one(
+        {"key": user_key}, 
+        {
+            "$set": {"last_used": now_str, "last_client": client_name},
+            "$addToSet": {"request_logs": user_ip} 
+        }
+    )
+
+    if not key_data.get("is_active", True):
+        return jsonify({"error": True, "message": f"Your access key '{user_key}' has been paused or temporarily suspended by admin"}), 403
+
+    # এক্সপায়ারি চেক
+    expiry_time_str = key_data.get("expires_at")
+    if expiry_time_str:
+        try:
+            clean_expiry = expiry_time_str.replace(" BDT", "")
+            expiry_time = datetime.datetime.strptime(clean_expiry, '%Y-%m-%d %H:%M:%S')
+            current_bd_naive = datetime.datetime.strptime(get_bd_time().strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')
+            if current_bd_naive > expiry_time:
+                return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
+        except Exception: pass
+
+    # IP Locking Check
+    if key_data.get("ip_locked"):
+        current_locked_ip = key_data.get("locked_ip")
+        if not current_locked_ip:
+            keys_collection.update_one({"key": user_key}, {"$set": {"locked_ip": user_ip}})
+            current_locked_ip = user_ip
+        if user_ip != current_locked_ip:
+            return jsonify({"error": True, "message": "You are not whitelisted! IP mismatch."}), 403
+
     try:
-        # ৬০ সেকেন্ড টাইমআউটসহ কল
-        response = requests.get(f"{INFO_TARGET_URL}?uid={uid}&key={key}", timeout=60)
+        response = requests.get(f"{INFO_TARGET_URL}?uid={uid}&key=great", timeout=60)
         return jsonify(response.json()), response.status_code
     except Exception as e:
         return jsonify({"error": True, "message": "Failed to fetch info from remote server", "details": str(e)}), 500
@@ -195,7 +232,6 @@ def check_uid():
     if not key_data:
         return jsonify({"error": True, "message": f"Your key '{user_key}' is not valid"}), 401
 
-    # ডাইনামিক ইউজ, ব্রাউজার নেম এবং ইউনিক আইপি অ্যারে লগ মেইনটেইন
     now_str = get_bd_time().strftime('%Y-%m-%d %H:%M:%S') + " BDT"
     keys_collection.update_one(
         {"key": user_key}, 
@@ -214,19 +250,15 @@ def check_uid():
             clean_expiry = expiry_time_str.replace(" BDT", "")
             expiry_time = datetime.datetime.strptime(clean_expiry, '%Y-%m-%d %H:%M:%S')
             current_bd_naive = datetime.datetime.strptime(get_bd_time().strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')
-            
             if current_bd_naive > expiry_time:
                 return jsonify({"error": True, "message": f"Your key '{user_key}' has expired"}), 401
-        except Exception:
-            pass 
+        except Exception: pass 
 
     if key_data.get("ip_locked"):
         current_locked_ip = key_data.get("locked_ip")
-        
         if not current_locked_ip:
             keys_collection.update_one({"key": user_key}, {"$set": {"locked_ip": user_ip}})
             current_locked_ip = user_ip
-            
         if user_ip != current_locked_ip:
             return jsonify({"error": True, "message": "You are not whitelisted! IP mismatch."}), 403
 
