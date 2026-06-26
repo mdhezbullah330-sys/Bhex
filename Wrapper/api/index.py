@@ -215,8 +215,8 @@ def get_info():
         if isinstance(data, dict):
             data.pop("credit", None)
         return jsonify(data), response.status_code
-    except Exception as e:
-        return jsonify({"error": True, "message": "Failed to fetch info from remote server", "details": str(e)}), 500
+    except Exception:
+        return jsonify({"error": True, "message": "Failed to fetch info from remote server"}), 500
 
 @app.route('/username', methods=['GET'])
 def get_username():
@@ -268,8 +268,8 @@ def get_username():
         if isinstance(data, dict):
             data.pop("credit", None)
         return jsonify(data), response.status_code
-    except Exception as e:
-        return jsonify({"error": True, "message": "Failed to fetch username from remote server", "details": str(e)}), 500
+    except Exception:
+        return jsonify({"error": True, "message": "Failed to fetch username from remote server"}), 500
 
 @app.route('/check', methods=['GET'])
 def check_uid():
@@ -321,8 +321,8 @@ def check_uid():
         if isinstance(api_res, dict):
             api_res.pop("credit", None)
         return jsonify(api_res), response.status_code
-    except Exception as e:
-        return jsonify({"error": True, "message": "API took too long to respond or is down", "details": str(e)}), 500
+    except Exception:
+        return jsonify({"error": True, "message": "API took too long to respond or is down"}), 500
 
 @app.route('/')
 def home():
