@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Key Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { 
+            background: linear-gradient(rgba(4, 2, 8, 0.85), rgba(4, 2, 8, 0.95)), url("{{ url_for('static', filename='images/bg.jpg') }}") no-repeat center center fixed; 
+            background-size: cover;
+            color: #f1f5f9; 
+        }
+        .neon-border-emerald { border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16, 185, 129, 0.03); backdrop-blur: md; }
+        .neon-border-blue { border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 0 20px rgba(59, 130, 246, 0.03); backdrop-blur: md; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        .swal2-popup { background: #090514 !important; border: 1px solid #1e1b4b !important; color: #f1f5f9 !important; border-radius: 1rem !important; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col justify-between">
+
+    <div class="max-w-7xl mx-auto w-full">
+        
+        <header class="flex flex-col sm:flex-row justify-between items-center p-5 bg-slate-950/70 backdrop-blur-xl rounded-2xl border border-slate-900 mb-8 animate__animated animate__fadeInDown">
+            <div class="flex items-center gap-4 mb-4 sm:mb-0">
+                <div class="relative">
+                    <div class="absolute -inset-0.5 bg-emerald-500 rounded-xl blur opacity-30 animate-pulse"></div>
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" class="relative w-12 h-12 rounded-xl object-cover border border-emerald-500/30">
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">BENJA HEX API</h1>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <p class="text-[9px] text-slate-500 font-mono tracking-widest uppercase">Live Matrix Grid: Streaming (BDT)</p>
+                    </div>
+                </div>
+            </div>
+            <a href="/logout" class="group flex items-center gap-2 px-4 py-2 text-xs font-mono font-bold bg-red-950/20 text-red-400 border border-red-900/40 rounded-xl hover:bg-red-500 hover:text-white transition-all duration-300">
+                <span>Terminate Session</span>
+            </a>
+        </header>
+
+        {% if msg %}
+            <div class="p-4 mb-6 text-xs font-mono rounded-xl animate__animated animate__backInRight {% if 'Error' in msg or 'Backend' in msg %} bg-red-950/30 text-red-400 border border-red-900/50 {% else %} bg-emerald-950/30 text-emerald-400 border border-emerald-900/50 {% endif %}">
+                <span>{{ msg }}</span>
+            </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 animate__animated animate__fadeInLeft">
+                <div class="bg-slate-950/50 p-6 rounded-2xl neon-border-emerald">
+                    <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Key Configuration</h3>
+                    </div>
+                    
+                    <form method="POST" class="space-y-4">
+                        <div>
+                            <label class="block mb-1 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Key Token</label>
+                            <input type="text" name="key_name" required placeholder="VIP_ACCESS" class="w-full px-4 py-2.5 bg-black/40 border border-slate-900 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-emerald-500/50">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-[10px] font-mono uppercase text-slate-500 tracking-wider">Lifespan (Days)</label>
+                            <input type="number" name="expiry_days" min="1" required placeholder="30" class="w-full px-4 py-2.5 bg-black/40 border border-slate-900 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-emerald-500/50">
+                        </div>
+                        
+                        <div class="bg-black/30 p-3 rounded-xl border border-slate-900 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-mono text-slate-400">Enable IP Protection</label>
+                                <input type="checkbox" name="ip_locked" id="ip_locked" class="w-4 h-4 accent-emerald-500 cursor-pointer" onchange="toggleManualIpBox()">
+                            </div>
+                            <div id="manual_ip_container" class="hidden animate__animated animate__fadeIn">
+                                <label class="block mb-1 text-[9px] font-mono uppercase text-slate-500 tracking-wider">Manual IP Target (Optional)</label>
+                                <input type="text" name="manual_ip" placeholder="e.g., 103.45.12.89" class="w-full px-3 py-2 bg-black/60 border border-slate-900 rounded-lg text-xs font-mono text-slate-300 focus:outline-none focus:border-emerald-500/50">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 text-xs font-mono font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 rounded-xl hover:from-emerald-300 hover:to-teal-300 transition-all uppercase tracking-widest">
+                            Deploy Token
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 animate__animated animate__fadeInRight">
+                <div class="bg-slate-950/50 p-6 rounded-2xl neon-border-blue flex flex-col h-full">
+                    <div class="flex items-center gap-2 mb-6 border-b border-slate-900 pb-3 justify-between">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-400">Database Registry</h3>
+                        <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+                            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Live Sync Active
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto rounded-xl border border-slate-900 bg-black/10 custom-scrollbar flex-grow max-h-[420px]">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950/80 text-[10px] font-mono text-slate-500 border-b border-slate-900 sticky top-0 z-10 tracking-wider">
+                                    <th class="p-3 uppercase">Token</th>
+                                    <th class="p-3 uppercase">Expiration (BDT)</th>
+                                    <th class="p-3 uppercase">Security IP</th>
+                                    <th class="p-3 uppercase">Client/Browser</th>
+                                    <th class="p-3 uppercase">Last Dynamic Use</th>
+                                    <th class="p-3 uppercase text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keys-table-body" class="divide-y divide-slate-900 text-xs font-mono">
+                                <tr><td colspan="6" class="p-8 text-center text-slate-600 italic">Syncing system states...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="form-container" class="hidden"></div>
+
+    <footer class="mt-12 border-t border-slate-900 pt-6 flex flex-col items-center gap-3">
+        <div class="text-[10px] font-mono tracking-widest text-slate-500 uppercase">Developed & Managed by <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 font-bold">BENJA HEX</span></div>
+    </footer>
+
+    <script>
+        function toggleManualIpBox() {
+            const checkBox = document.getElementById('ip_locked');
+            const container = document.getElementById('manual_ip_container');
+            container.style.display = checkBox.checked ? 'block' : 'none';
+        }
+
+        // গ্লোবাল অবজেক্ট লাইভ লগ ডেটা হোল্ড করার জন্য
+        let globalKeysData = {};
+
+        async function fetchLiveKeysRegistry() {
+            try {
+                const response = await fetch('/api/live_keys');
+                if (!response.ok) return;
+                const keys = await response.json();
+                
+                const tbody = document.getElementById('keys-table-body');
+                let htmlOutput = "";
+                let formContainerHtml = "";
+
+                if (keys.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-600 italic">No localized records found.</td></tr>';
+                    return;
+                }
+
+                keys.forEach(k => {
+                    const token = k.key || 'UNKNOWN';
+                    const expires = k.expires_at || 'PERMANENT';
+                    const lastUsed = k.last_used || 'Never Used';
+                    const lastClient = k.last_client || 'None';
+                    const isActive = k.is_active !== false;
+                    const logsArray = k.request_logs || [];
+
+                    // গ্লোবাল ভ্যারিয়েবলে স্টোর রাখা হচ্ছে পপআপে দেখানোর জন্য
+                    globalKeysData[token] = logsArray;
+
+                    let ipStatusText = `<span class="text-slate-500 bg-slate-950/40 px-2 py-0.5 rounded border border-slate-800 text-[10px] italic">No Protection</span>`;
+                    if (k.ip_locked) {
+                        if (k.locked_ip) {
+                            ipStatusText = `<span class="text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-900/40">${k.locked_ip}</span>`;
+                        } else {
+                            ipStatusText = `<span class="text-yellow-500 bg-yellow-950/20 px-2 py-0.5 rounded border border-yellow-900/30 text-[10px]">Awaiting 1st Log</span>`;
+                        }
+                    }
+
+                    const tokenLabel = isActive ? 
+                        `<span class="text-slate-300 font-bold">${token}</span>` : 
+                        `<span class="text-red-500 font-bold line-through tracking-widest opacity-60" title="Paused Token Layer">${token}</span>`;
+
+                    const pauseBtnIcon = isActive ? 
+                        `<svg class="w-4 h-4 text-yellow-500 hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` : 
+                        `<svg class="w-4 h-4 text-emerald-500 hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>`;
+
+                    htmlOutput += `
+                        <tr class="hover:bg-slate-900/20 transition-all ${!isActive ? 'bg-red-950/5' : ''}">
+                            <td class="p-3">${tokenLabel}</td>
+                            <td class="p-3 text-slate-400 text-[11px]">${expires}</td>
+                            <td class="p-3">${ipStatusText}</td>
+                            <td class="p-3 text-blue-400 text-[11px] font-semibold">${lastClient}</td>
+                            <td class="p-3 text-slate-300 text-[11px] font-bold">${lastUsed}</td>
+                            <td class="p-3">
+                                <div class="flex items-center justify-center gap-3">
+                                    <button type="button" onclick="showIPLogs('${token}')" title="View Request IPs Network Log" class="text-purple-400 hover:text-purple-300 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    </button>
+
+                                    <button type="button" onclick="confirmPauseToggle('${token}', ${isActive})" title="${isActive ? 'Pause Key' : 'Resume Key'}">
+                                        ${pauseBtnIcon}
+                                    </button>
+                                    
+                                    ${k.ip_locked ? `
+                                    <button type="button" onclick="confirmResetIP('${token}')" title="Reset Locked IP" class="text-blue-500 hover:text-blue-400 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
+                                    </button>
+                                    ` : ''}
+                                    
+                                    <button type="button" onclick="confirmDeleteKey('${token}')" title="Delete Key" class="text-red-500 hover:text-red-400 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+
+                    formContainerHtml += `
+                        <form id="form-delete-${token}" action="/delete_key/${token}" method="POST" class="hidden"></form>
+                        <form id="form-pause-${token}" action="/toggle_pause/${token}" method="POST" class="hidden"></form>
+                        <form id="form-reset-${token}" action="/reset_ip/${token}" method="POST" class="hidden"></form>
+                    `;
+                });
+
+                tbody.innerHTML = htmlOutput;
+                document.getElementById('form-container').innerHTML = formContainerHtml;
+            } catch (err) {
+                console.error("Live sync failed:", err);
+            }
+        }
+
+        // IP Logs পপআপ হ্যান্ডলার
+        function showIPLogs(keyName) {
+            const logs = globalKeysData[keyName] || [];
+            let contentHtml = "";
+
+            if (logs.length === 0) {
+                contentHtml = `<p class="text-sm font-mono text-slate-500 italic">No incoming requests registered yet.</p>`;
+            } else {
+                contentHtml = `
+                    <div class="text-left font-mono space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                        <p class="text-[11px] text-purple-400 uppercase tracking-wider mb-2 font-bold">Total Unique Devices/IPs: ${logs.length}</p>
+                        <ul class="divide-y divide-slate-900 border border-slate-900 bg-black/40 rounded-xl p-2">
+                            ${logs.map((ip, idx) => `
+                                <li class="py-2 px-3 text-xs flex items-center justify-between hover:bg-slate-950/60 rounded transition-colors">
+                                    <span class="text-slate-400 font-bold">#${idx+1}</span>
+                                    <span class="text-emerald-400 font-bold select-all">${ip}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            Swal.fire({
+                title: `<span class="text-sm font-mono uppercase font-bold text-slate-300">Network Pipeline Logs [ ${keyName} ]</span>`,
+                html: contentHtml,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Dismiss Operational View'
+            });
+        }
+
+        function confirmDeleteKey(keyName) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'You want to delete token: ' + keyName,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-delete-' + keyName).submit();
+                }
+            })
+        }
+
+        function confirmPauseToggle(keyName, currentlyActive) {
+            Swal.fire({
+                title: currentlyActive ? 'Pause this key?' : 'Resume this key?',
+                text: currentlyActive ? `Clients using [ ${keyName} ] will instantly receive a suspended pause response.` : `Restores standard operational pipeline for [ ${keyName} ]`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: currentlyActive ? '#eab308' : '#10b981',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: currentlyActive ? 'Yes, Pause!' : 'Yes, Resume!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-pause-' + keyName).submit();
+                }
+            })
+        }
+
+        function confirmResetIP(keyName) {
+            Swal.fire({
+                title: 'Reset Locked IP?',
+                text: "This will unlock the key for the next device login target verification.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Yes, reset!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-reset-' + keyName).submit();
+                }
+            })
+        }
+
+        fetchLiveKeysRegistry();
+        setInterval(fetchLiveKeysRegistry, 3000);
+    </script>
+</body>
+</html>
